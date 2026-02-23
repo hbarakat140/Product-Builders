@@ -88,10 +88,10 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 ### Enforcement: Three Layers
 
 - **Layer 1 (Rules)**: Soft guidance — AI "should" follow scope
-- **Layer 2 (Hooks)**: Smart blocking — intercept edits, block with helpful message ("Create a Jira issue instead")
+- **Layer 2 (Hooks)**: Smart blocking — `preToolUse` (matcher `Write|Edit`) intercepts file edits; `beforeShellExecution` blocks dangerous shell commands. Returns helpful message ("Create a Jira issue instead"). *Validated Feb 2026* — see [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) for Cursor hooks research.
 - **Layer 3 (Permissions)**: Hard deny — physical filesystem deny via `cli.json`
 
-- **Rationale**: Defense in depth; helpful UX when blocked.
+- **Rationale**: Defense in depth; helpful UX when blocked. Layer 3 guarantees enforcement even if hooks fail (e.g. ENAMETOOLONG on Windows for large files).
 
 ### Design System Analysis: First-Class Capability
 
@@ -185,4 +185,5 @@ Evolution toward MCP-native platform:
 ## References
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Full architecture, diagrams, resolved decisions
+- [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) — Cursor hooks validation research (preToolUse, ENAMETOOLONG, best practices)
 - [.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md](.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md) — Implementation plan and todos

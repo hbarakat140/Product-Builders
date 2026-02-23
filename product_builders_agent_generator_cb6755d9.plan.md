@@ -426,19 +426,25 @@ The `contributor-guide.mdc` rule tells the AI what the contributor's scope is. T
 
 ### Layer 2: Hooks (smart blocking with helpful UX)
 
-`preToolUse` hooks intercept every file edit, file create, and shell command. If the operation targets a file outside the contributor's scope, the hook:
+**Validated Feb 2026**: Cursor's `preToolUse` hook exists and supports file scope enforcement. See [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) for full research.
 
-- **Blocks the operation** (exit code 2)
-- **Returns a helpful JSON message** explaining WHY it was blocked and WHAT the contributor should do instead
+`preToolUse` hooks (matcher `Write|Edit`) intercept file edits and creates before execution. The hook receives `tool_input.file_path` via stdin JSON. If the path is outside the contributor's scope, the hook:
+
+- **Blocks the operation** (return `permissionDecision: "deny"` or exit code 2)
+- **Returns a helpful JSON message** (`permissionDecisionReason`) explaining WHY and WHAT to do instead
 
 Example hook output when a PM tries to edit a migration file:
 
 ```json
 {
-  "decision": "deny",
-  "reason": "This file (migrations/001_add_users.sql) is a database migration. As a Product Manager, database schema changes require engineering team involvement. I can help you create a Jira issue describing the database change you need instead."
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "This file (migrations/001_add_users.sql) is a database migration. As a Product Manager, database schema changes require engineering team involvement. I can help you create a Jira issue describing the database change you need instead."
 }
 ```
+
+Shell commands are intercepted via `beforeShellExecution` or `preToolUse` with matcher `Shell`. Both file and shell blocking can return helpful redirect messages.
+
+**Known caveat**: On Windows, `preToolUse` may fail with ENAMETOOLONG when editing very large files (payload includes full content). Mitigation: cli.json (Layer 3) always enforces; test on Windows during pilot. Most PM/designer edits touch smaller files.
 
 ### Layer 3: Permissions (hard filesystem deny)
 
@@ -695,11 +701,29 @@ Each follows Cursor's official format. Rules kept under 500 lines per Cursor bes
 
 ### Safety Hooks (hooks.json)
 
-Generated `.cursor/hooks.json` with product-specific safety guardrails:
+Generated `.cursor/hooks.json` with product-specific safety guardrails. Uses Cursor's `preToolUse` (matcher `Write|Edit`) for file scope and `beforeShellExecution` for shell commands. See [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) for API details.
 
+Example structure:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      { "command": "./hooks/scope-check.sh", "matcher": "Write|Edit" }
+    ],
+    "beforeShellExecution": [
+      { "command": "./hooks/shell-guard.sh" }
+    ]
+  }
+}
+```
+
+Scope-check script reads `tool_input.file_path` from stdin, returns `permissionDecision: "deny"` + `permissionDecisionReason` when path is outside contributor scope.
+
+- Block file writes outside contributor scope (with helpful redirect message)
 - Block destructive shell commands (DB drops, force pushes, migration resets)
 - Warn on modifications to sensitive files (auth, migrations, CI/CD configs)
-- Warn on file creation in protected directories
 
 ### Team Rules Recommendations
 

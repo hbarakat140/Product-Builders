@@ -1,8 +1,8 @@
 # Product Builders - Solution Architecture
 
 > **Status**: Draft - Under review before expert validation  
-> **Last updated**: Feb 19, 2026  
-> **Version**: 0.5
+> **Last updated**: Feb 23, 2026  
+> **Version**: 0.6
 
 ---
 
@@ -31,6 +31,10 @@
 - Hooks system: `preToolUse`, `postToolUse`, `beforeShellExecution`, etc. for agent governance
 - Background Agent API (Beta): Programmatic agent launches via REST API for automation
 - Best practices: focused rules under 500 lines, reference files, micro-examples, priorities 1-100
+
+### Cursor Hooks Validation (Feb 2026)
+
+Layer 2 (hooks) design has been validated. `preToolUse` with matcher `Write|Edit` intercepts file edits; `tool_input.file_path` is available for scope checks. Hook returns `permissionDecision: "deny"` + `permissionDecisionReason` for helpful blocking. Known caveat: ENAMETOOLONG on Windows for very large files. Full research: [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md).
 
 ### Why We Need Our Own Tool
 
@@ -251,19 +255,25 @@ The `contributor-guide.mdc` rule tells the AI what the contributor's scope is. T
 
 ### Layer 2: Hooks (smart blocking with helpful UX)
 
-`preToolUse` hooks intercept every file edit, file create, and shell command. If the operation targets a file outside the contributor's scope, the hook:
+**Validated Feb 2026**: Cursor's `preToolUse` hook exists and supports file scope enforcement. See [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) for full research.
 
-- **Blocks the operation** (exit code 2)
-- **Returns a helpful JSON message** explaining WHY it was blocked and WHAT the contributor should do instead
+`preToolUse` hooks (matcher `Write|Edit`) intercept file edits and creates before execution. The hook receives `tool_input.file_path` via stdin JSON. If the path is outside the contributor's scope, the hook:
+
+- **Blocks the operation** (return `permissionDecision: "deny"` or exit code 2)
+- **Returns a helpful JSON message** (`permissionDecisionReason`) explaining WHY and WHAT to do instead
 
 Example hook output when a PM tries to edit a migration file:
 
 ```json
 {
-  "decision": "deny",
-  "reason": "This file (migrations/001_add_users.sql) is a database migration. As a Product Manager, database schema changes require engineering team involvement. I can help you create a Jira issue describing the database change you need instead."
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "This file (migrations/001_add_users.sql) is a database migration. As a Product Manager, database schema changes require engineering team involvement. I can help you create a Jira issue describing the database change you need instead."
 }
 ```
+
+Shell commands are intercepted via `beforeShellExecution` or `preToolUse` with matcher `Shell`. Both file and shell blocking can return helpful redirect messages.
+
+**Known caveat**: On Windows, `preToolUse` may fail with ENAMETOOLONG when editing very large files (payload includes full content). Mitigation: cli.json (Layer 3) always enforces; test on Windows during pilot. Most PM/designer edits touch smaller files.
 
 ### Layer 3: Permissions (hard filesystem deny)
 
@@ -514,11 +524,11 @@ Each follows Cursor's official format. Rules kept under 500 lines per Cursor bes
 
 ### Safety Hooks (hooks.json)
 
-Generated `.cursor/hooks.json` with product-specific safety guardrails:
+Generated `.cursor/hooks.json` with product-specific safety guardrails. Uses `preToolUse` (matcher `Write|Edit`) for file scope and `beforeShellExecution` for shell commands. See [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) for API details.
 
+- Block file writes outside contributor scope (with helpful redirect message)
 - Block destructive shell commands (DB drops, force pushes, migration resets)
 - Warn on modifications to sensitive files (auth, migrations, CI/CD configs)
-- Warn on file creation in protected directories
 
 ### Team Rules Recommendations
 
