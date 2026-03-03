@@ -95,6 +95,12 @@ status: pending
 - id: design-analyzer
 content: "Phase 4: Implement design/UI analyzer"
 status: pending
+- id: frontend-patterns-analyzer
+content: "Phase 4: Implement frontend patterns analyzer (layout, form, modal, list, error, loading patterns)"
+status: pending
+- id: user-flows-analyzer
+content: "Phase 4: Implement user flows analyzer (route structure, navigation graph, task flows)"
+status: pending
 - id: a11y-analyzer
 content: "Phase 4: Implement accessibility analyzer"
 status: pending
@@ -387,6 +393,8 @@ Using ALL analysis data (heuristic + Steps 1-3), Cursor generates the final 14 `
 
 Total deep analysis: ~10 minutes per product. The user runs steps sequentially in Cursor Chat.
 
+**Deep analysis review**: After completing the 4 steps, the platform team reviews the enriched rules before committing. Each step's output should conform to a defined JSON schema (architecture, domain model, conventions) so structural correctness can be validated automatically. The `generate --validate` command checks schema conformance. Content accuracy is reviewed manually — the platform team verifies that key rules (database patterns, auth, naming conventions) match the actual codebase.
+
 ### Mechanism 2: Standalone Analysis Prompts
 
 For targeted deep dives or re-analysis of a single dimension, the tool generates individual prompts in `prompts/`. Product teams can run these independently when a specific area changes.
@@ -505,15 +513,19 @@ zones:
     paths: ["src/auth/**", "src/middleware/auth*"]
   configuration:
     paths: [".env*", "config/**"]
+  tests:
+    paths: ["tests/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*"]
+  fixtures:
+    paths: ["tests/fixtures/**", "tests/data/**", "**/__fixtures__/**"]
 
 contributor_scopes:
   engineer:
-    allowed_zones: [frontend_ui, frontend_logic, api, backend_logic, database, infrastructure, security, configuration]
+    allowed_zones: [frontend_ui, frontend_logic, api, backend_logic, database, infrastructure, security, configuration, tests, fixtures]
     read_only_zones: []
     forbidden_zones: []
   technical_pm:
     allowed_zones: [frontend_ui, frontend_logic, api]
-    read_only_zones: [backend_logic]
+    read_only_zones: [backend_logic, tests]
     forbidden_zones: [database, infrastructure, security, configuration]
   product_manager:
     allowed_zones: [frontend_ui, frontend_logic]
@@ -610,8 +622,8 @@ When a developer reviews and requests changes, the PM can paste the review comme
 
 Profiles control two things: **which rules are emphasized** and **what scope is enforced**. All profiles benefit from product-specific rules — the AI generates compatible code regardless of who's asking.
 
-- **Engineer**: All rules active. No scope restrictions — full access to all zones. Hooks set to **warn only** (not block). No permission restrictions. Default profile.
-- **Technical PM**: All rules active. Most zones accessible (frontend, logic, API). Backend read-only. Hooks warn on critical operations.
+- **Engineer**: All rules active. No scope restrictions — full access to all zones. **No scope-check hooks installed** (engineer profile omits the `preToolUse` scope-check from `hooks.json`; `cli.json` has no write restrictions). Default profile.
+- **Technical PM**: All rules active. Most zones accessible (frontend, logic, API). Backend read-only. Hooks block with helpful messages on critical operations (database, infrastructure, security).
 - **Product Manager**: All rules active. Frontend zones writable (UI + logic). Backend and API read-only. Database/infra hooks **block** with helpful redirects.
 - **Designer**: Frontend UI rules emphasized. Only UI components and styles writable. Strictest permissions.
 - **QA / Tester**: Test rules emphasized. Test directories writable. Cannot modify production code. Hooks block non-test changes.
@@ -630,7 +642,13 @@ product-builders setup --profile engineer
 product-builders setup --profile pm
 ```
 
-The `setup` command reads the product's `scopes.yaml` (committed to git) and generates profile-specific `hooks.json` and `cli.json` locally (gitignored).
+The `setup` command:
+
+1. Reads the product's `scopes.yaml` (committed to git)
+2. Generates profile-specific `hooks.json` and `cli.json` locally (gitignored)
+3. Writes `.cursor/contributor-profile.json` (gitignored) recording the active profile — this is read by the scope-check hook to determine which zones are allowed
+
+**If `scopes.yaml` is missing** (e.g. product not yet analyzed/exported), `setup` exits with a clear error message and instructions to run `product-builders analyze` and `export` first. No fallback defaults — explicit analysis is required.
 
 ---
 
@@ -684,20 +702,22 @@ Each follows Cursor's official format. Rules kept under 500 lines per Cursor bes
 
 (Using bullet list per formatting rules)
 
-- **project-overview.mdc** (`alwaysApply: true`): Product context, tech stack summary, architecture overview. Always in context.
-- **tech-stack.mdc** (`alwaysApply: true`): Allowed languages, frameworks, versions. Prevents incompatible technologies.
-- **architecture.mdc** (Apply Intelligently): Module boundaries, dependency direction, layering constraints.
-- **coding-conventions.mdc** (Apply to Specific Files, globs by language): Naming, formatting, import ordering.
-- **database.mdc** (Apply Intelligently, priority: 90): ORM patterns, migration safety rules, schema conventions. HIGH PRIORITY.
-- **security-and-auth.mdc** (`alwaysApply: true`, priority: 100): Company-wide + product-specific security. Auth patterns, input validation, secrets handling.
-- **error-handling.mdc** (Apply Intelligently): Logging framework, error patterns, monitoring integration.
-- **testing.mdc** (Apply to Specific Files, globs: test dirs): Test framework, naming, mock patterns, coverage expectations.
-- **design-system.mdc** (Apply to Specific Files, globs: frontend): Component patterns, styling, design tokens.
-- **accessibility.mdc** (Apply to Specific Files, globs: frontend): WCAG level, ARIA patterns, semantic HTML, keyboard nav, color contrast.
-- **api-patterns.mdc** (Apply to Specific Files, globs: API dirs): Endpoint naming, HTTP methods, response format, pagination.
-- **i18n.mdc** (Apply Intelligently): String externalization, translation patterns. Prevents hardcoded strings.
-- **state-and-config.mdc** (Apply Intelligently): State management patterns, env config, feature flags.
-- **contributor-guide.mdc** (`alwaysApply: true`): Git workflow, PR process, review expectations, performance guidelines, contributor-profile-specific guidance. The "how to work here" rule.
+- **security-and-auth.mdc** (`alwaysApply: true`, priority: **100**): Company-wide + product-specific security. Auth patterns, input validation, secrets handling. Highest priority — safety-critical.
+- **database.mdc** (Apply Intelligently, priority: **90**): ORM patterns, migration safety rules, schema conventions. Data integrity.
+- **tech-stack.mdc** (`alwaysApply: true`, priority: **85**): Allowed languages, frameworks, versions. Prevents incompatible technologies.
+- **architecture.mdc** (Apply Intelligently, priority: **80**): Module boundaries, dependency direction, layering constraints. Structural integrity.
+- **error-handling.mdc** (Apply Intelligently, priority: **75**): Logging framework, error patterns, monitoring integration. Operational reliability.
+- **coding-conventions.mdc** (Apply to Specific Files, globs by language, priority: **70**): Naming, formatting, import ordering. Code consistency.
+- **contributor-guide.mdc** (`alwaysApply: true`, priority: **65**): Git workflow, PR process, review expectations, performance guidelines, contributor-profile-specific guidance. The "how to work here" rule.
+- **api-patterns.mdc** (Apply to Specific Files, globs: API dirs, priority: **60**): Endpoint naming, HTTP methods, response format, pagination.
+- **testing.mdc** (Apply to Specific Files, globs: test dirs, priority: **60**): Test framework, naming, mock patterns, coverage expectations.
+- **i18n.mdc** (Apply Intelligently, priority: **55**): String externalization, translation patterns. Prevents hardcoded strings.
+- **state-and-config.mdc** (Apply Intelligently, priority: **50**): State management patterns, env config, feature flags.
+- **design-system.mdc** (Apply to Specific Files, globs: frontend, priority: **50**): Component patterns, styling, design tokens.
+- **accessibility.mdc** (Apply to Specific Files, globs: frontend, priority: **45**): WCAG level, ARIA patterns, semantic HTML, keyboard nav, color contrast.
+- **project-overview.mdc** (`alwaysApply: true`, priority: **40**): Product context, tech stack summary, architecture overview. Always in context.
+
+Priority strategy: Safety-critical rules (security, database) have the highest priority and override all others. Structural rules (tech stack, architecture) follow. Convention and workflow rules have medium priority. Informational/contextual rules have the lowest. When rules conflict, the higher-priority rule wins.
 
 ### Safety Hooks (hooks.json)
 
@@ -731,7 +751,26 @@ A markdown document recommending which company-wide standards should be configur
 
 ### PM Onboarding Guide
 
-Auto-generated markdown guide per product: what the product is, how to set up the dev environment, what the PM can/should do, what to avoid, and how to get help.
+Auto-generated markdown guide per product: what the product is, how to set up the dev environment, what the PM can/should do, what to avoid, and how to get help. The guide includes:
+
+- **"Hello World" first task**: A pre-built, zero-risk task that walks through the entire contribution flow (clone, setup, small UI change, PR). Designed to succeed on the first attempt.
+- **Scope exploration prompt**: "What can I do in this project?" — answered by `project-overview.mdc` based on the contributor's profile.
+- **What happens when blocked**: Explanation that hooks produce helpful messages (not errors) and tell the PM what to do next.
+- **Escalation path**: Where to ask for help (see DP-8).
+- **Trust-building progression**: Start with low-risk tasks (copy changes, style tweaks), graduate to feature work as confidence builds.
+
+---
+
+## Rule Validation
+
+After generation (heuristic or deep analysis), rules should be smoke-tested to verify they produce compatible code. The validation step:
+
+1. **Structural validation**: Verify all 14 `.mdc` files have valid frontmatter (description, globs, activation type), are under 500 lines, and have no broken references.
+2. **Scope consistency**: Verify `scopes.yaml` zones cover all directories in the project (no uncategorized paths). Verify all contributor profiles reference valid zones.
+3. **Prompt-based smoke test**: Run a small set of predefined prompts (e.g., "add a button component", "create a new page") against the generated rules in Cursor and verify the output matches the product's patterns. This is manual during pilot; can be automated later via Background Agent API.
+4. **Conflict check**: Scan rules for contradictory instructions (e.g., two rules specifying different styling approaches). Flag for manual review.
+
+Validation is part of the `generate` command (`--validate` flag) for structural checks. Prompt-based smoke tests are run manually during initial setup and after re-analysis.
 
 ---
 
@@ -742,7 +781,8 @@ Auto-generated markdown guide per product: what the product is, how to set up th
 1. Platform team runs CLI to analyze product codebase
 2. Heuristic analysis produces initial rules
 3. Deep analysis via Cursor enriches and finalizes rules
-4. Platform team reviews and commits rules to product repo
+4. Platform team runs validation (`generate --validate`)
+5. Platform team reviews and commits rules to product repo
 
 ### Ongoing Maintenance
 
@@ -756,6 +796,18 @@ Auto-generated markdown guide per product: what the product is, how to set up th
 
 - Rules that reference removed frameworks/patterns are flagged as stale
 - Quarterly review cadence recommended
+
+---
+
+## Cursor Version Compatibility
+
+Cursor is evolving rapidly. Hooks are in beta. The `preToolUse` payload format, `cli.json` syntax, and `.mdc` frontmatter format could change. The tool must handle this gracefully.
+
+- **Minimum version**: Pin the minimum Cursor version required for hooks support (determined during pilot). Document in README and `setup` output.
+- **Version check in `setup`**: The `setup` command warns if the detected Cursor version is below the minimum. It does not block — rules still work without hooks, but governance is degraded to Layer 1 + Layer 3 only.
+- **`cursor-compatibility.yaml`**: A mapping of Cursor version ranges to supported features (hooks format, cli.json syntax, .mdc frontmatter fields). When a Cursor update breaks something, the YAML is updated and the generators adapt output accordingly. This decouples the tool from a single Cursor version.
+- **Feature detection over version numbers**: Where possible, detect feature support at runtime (e.g., does `hooks.json` with the current format load without errors?) rather than relying on version numbers.
+- **Regression testing**: After major Cursor releases, run the rule smoke test suite on pilot products to detect breakage. Document findings in release notes.
 
 ---
 
@@ -773,6 +825,13 @@ Auto-generated markdown guide per product: what the product is, how to set up th
 - **Template-driven generation**: Jinja2 templates for easy iteration on rule quality.
 - **Overrides system**: `overrides.yaml` per product for manual corrections.
 - **Rule lifecycle management**: Re-analysis triggers, drift detection, feedback loop, version tracking.
+- **Analyzer failure handling**: Analyzers that fail (e.g. malformed config files, missing dependencies) produce a partial result with `status: "error"` and `error_message`. The overall analysis continues — a partial profile is better than no profile. Errors are surfaced in CLI output and recorded in `analysis.json` for review.
+- **Mixed Git platforms**: The `git_workflow` analyzer is platform-aware (GitHub, GitLab, Azure DevOps, Bitbucket). It detects platform from `.github/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, or `bitbucket-pipelines.yml` and generates platform-appropriate PR workflow guidance in `contributor-guide.mdc`.
+- **Bootstrap rule excluded from export**: `analyze-and-generate.mdc` is temporary. The `export` command excludes it from product repos to prevent shipping internal analysis tooling.
+- **Dev environment bootstrap (nice to have)**: Automated dev environment validation (Docker, env vars, DB seeds) is out of scope for v1. The onboarding guide documents setup steps per product, but automated environment bootstrapping is a future enhancement.
+- **Monorepo support (additive)**: `--sub-project` flag enables per-sub-project analysis and namespaced rule generation. Single-repo products are unaffected. Rules are namespaced (`{sub-project}--rule.mdc`) with sub-project-scoped globs. Repo-wide rules remain shared.
+- **Cursor version resilience**: `cursor-compatibility.yaml` maps Cursor versions to supported features. Generators adapt output format based on detected version. Feature detection preferred over version numbers.
+- **Automated rule staleness detection**: Hash-based and git-based drift detection built into the tool (`check-drift` command). CI integration and scheduled scans for proactive maintenance at scale. Operational model (thresholds, notifications) is DP-9.
 
 ---
 
@@ -890,7 +949,7 @@ Product-Builders/
 │           ├── hooks.json              # Safety hooks (Layer 2: smart blocking)
 │           ├── cli.json                # CLI permissions (Layer 3: hard deny)
 │           └── rules/
-│               ├── analyze-and-generate.mdc   # Bootstrap meta-rule (temporary)
+│               ├── analyze-and-generate.mdc   # Bootstrap meta-rule (temporary, NOT exported to product repos)
 │               ├── project-overview.mdc
 │               ├── tech-stack.mdc
 │               ├── architecture.mdc
@@ -928,7 +987,7 @@ python -m product_builders analyze /path/to/repo --name "product-x" --heuristic-
 # Regenerate rules (after updating templates, overrides, or contributor profile)
 python -m product_builders generate --name "product-x" --profile designer
 
-# Export to product repo
+# Export to product repo (excludes bootstrap meta-rule; includes rules, scopes.yaml, hook scripts)
 python -m product_builders export --name "product-x" --target /path/to/repo --profile pm
 
 # Setup local governance for contributor (run inside product repo after clone)
@@ -940,6 +999,12 @@ python -m product_builders list
 # Check for rule drift (has codebase changed significantly since last analysis?)
 python -m product_builders check-drift --name "product-x" --repo /path/to/repo
 
+# Analyze a sub-project in a monorepo
+python -m product_builders analyze /path/to/monorepo --name "frontend-app" --sub-project apps/frontend
+
+# Bulk analyze all sub-projects in a monorepo (auto-discovers sub-projects)
+python -m product_builders bulk-analyze --monorepo /path/to/monorepo
+
 # Bulk analyze from manifest
 python -m product_builders bulk-analyze --manifest products.yaml
 
@@ -950,6 +1015,8 @@ python -m product_builders feedback --name "product-x" --rule "database" --issue
 ---
 
 ## Implementation Phases
+
+**Delivery is incremental.** Each phase ships value independently. The first deliverable is Phase 1 + Phase 2 (8 core analyzers) + Phase 3 (rule generation + governance) for pilot products. Remaining analyzers (Phase 4), webapp content, lifecycle automation (Phase 5), and monorepo support are delivered as they become ready. This approach reduces scope creep risk and enables early validation with real users.
 
 ### Phase 1 — Foundation
 
@@ -993,6 +1060,8 @@ python -m product_builders feedback --name "product-x" --rule "database" --issue
 - Testing analyzer
 - CI/CD analyzer
 - Design/UI analyzer
+- Frontend patterns analyzer (layout, form, modal, list, error, loading patterns)
+- User flows analyzer (route structure, navigation graph, task flows)
 - Accessibility analyzer
 - API analyzer
 - i18n/l10n analyzer
@@ -1140,6 +1209,75 @@ Products can be grouped into families based on tech stack similarity. The tool d
 
 ---
 
+## Monorepo Support
+
+Some products live in monorepos (multiple apps/services in one repository). The default design assumes 1 repo = 1 product, but monorepo support is additive — single-repo products work exactly as before.
+
+### Problem
+
+Monorepos break the 1:1 assumption because:
+- Each sub-project has its own tech stack, conventions, and dependencies
+- Cursor rules live at `.cursor/rules/` (repo root only), not per sub-project
+- `scopes.yaml` zone paths must account for sub-project prefixes
+- Hooks and permissions must know which sub-project a file belongs to
+
+### Solution
+
+**CLI changes:**
+
+```bash
+# Analyze a specific sub-project
+product-builders analyze /path/to/monorepo --name "frontend-app" --sub-project apps/frontend
+
+# Auto-discover and analyze all sub-projects
+product-builders bulk-analyze --monorepo /path/to/monorepo
+```
+
+- `analyze` accepts `--sub-project <relative-path>` to scope analysis to a sub-directory
+- Auto-detection of monorepo markers: `lerna.json`, `pnpm-workspace.yaml`, `nx.json`, `turbo.json`, `packages/*/package.json`
+- Each sub-project produces its own Product Profile, stored as `profiles/{repo-name}/{sub-project}/`
+- `bulk-analyze --monorepo` auto-discovers all sub-projects and analyzes each independently
+
+**Rule generation:**
+
+- All rules go in `.cursor/rules/` at repo root (Cursor constraint)
+- Rule files are namespaced by sub-project: `{sub-project}--tech-stack.mdc`, `{sub-project}--database.mdc`
+- All sub-project rules use `Apply to Specific Files` activation with globs prefixed by the sub-project path (e.g., `apps/frontend/src/components/**`)
+- Shared/repo-wide rules (security, git-workflow) remain unprefixed and use `alwaysApply`
+
+**Scope enforcement:**
+
+- Each sub-project has its own `scopes.yaml` with zone paths relative to the sub-project root
+- `setup` merges all sub-project scopes into a unified `hooks.json` and `cli.json`
+- The scope-check hook resolves file paths to the correct sub-project before checking zones
+
+**Profile storage:**
+
+```
+profiles/
+└── my-monorepo/
+    ├── apps--frontend/
+    │   ├── analysis.json
+    │   ├── scopes.yaml
+    │   └── .cursor/rules/
+    │       ├── apps--frontend--tech-stack.mdc
+    │       └── ...
+    ├── apps--backend/
+    │   ├── analysis.json
+    │   ├── scopes.yaml
+    │   └── .cursor/rules/
+    │       ├── apps--backend--tech-stack.mdc
+    │       └── ...
+    └── shared-rules/
+        └── .cursor/rules/
+            ├── security-and-auth.mdc
+            └── contributor-guide.mdc
+```
+
+**Export merges** all sub-project rules into the repo's single `.cursor/rules/` directory, and all sub-project scopes into a unified governance layer.
+
+---
+
 ## Governance Without Cursor Enterprise
 
 The governance system does **NOT** depend on Cursor Enterprise. All enforcement uses project-level files (`.cursor/rules/`, `.cursor/hooks.json`, `.cursor/cli.json`). Company-wide standards are injected as `.mdc` files committed to every repo.
@@ -1202,6 +1340,35 @@ If Cursor Enterprise becomes available later, these features would be additive:
 **Status:** Governance does NOT depend on Cursor Enterprise. All enforcement is project-level.
 **Decision:** Park this. Revisit if/when Cursor Enterprise features become internally available.
 
+### DP-7: Design System Integration Strategy
+
+**What needs deciding:** Which design systems exist, which extraction approach to use, which products should adopt which DS?
+**Why it matters:** Design system analysis is a first-class capability. Extraction method determines data quality and maintenance cost.
+**Action:** Inventory all design systems. Validate Storybook extraction against CDS instance. Define which products should adopt CDS.
+
+### DP-8: PM Support Model and Escalation Path
+
+**What needs deciding:** When a PM gets stuck (AI generates broken code, review feedback is confusing, hook blocks unexpectedly), who do they ask for help? What is the escalation path?
+**Options to consider:** Dedicated Slack channel, buddy system (one engineer per PM), Platform Team office hours, self-service FAQ/troubleshooting guide, or a combination.
+**Why it matters:** Without a clear support model, PM frustration leads to abandonment. The first 2 weeks are critical for adoption.
+**Action:** Define during pilot. Test with pilot PMs and iterate.
+
+### DP-9: Automated Rule Staleness Detection and Maintenance Operations
+
+**What needs deciding:** What drift threshold triggers re-analysis? Who receives drift notifications? Should re-analysis be fully automated (via Background Agent API) or human-triggered?
+
+**Why it matters:** At 50+ products, manual monitoring is unsustainable. Stale rules produce incompatible code and erode PM trust.
+
+**Automation approach (built into the tool):**
+
+1. **Hash-based drift detection**: During analysis, compute fingerprints of key files (dependency manifests, config files, linter configs, CI pipelines). Store in `analysis.json`. The `check-drift` command compares current fingerprints vs stored ones. Outputs a drift score (0-100%) and lists which dimensions changed.
+2. **Git-based detection**: Record the commit SHA at analysis time. `check-drift` runs `git diff --stat <last-sha>..HEAD`, maps changed files to analysis dimensions.
+3. **CI integration**: Add a CI step that runs `check-drift` on merges to main. If drift exceeds a configurable threshold, create a notification (Jira, Slack, email).
+4. **Scheduled scan**: `bulk-check-drift --manifest products.yaml` runs across all products. Can be scheduled as a cron job.
+
+**Implementation**: Phase 5 (`check-drift` command is already planned). This DP decides the operational model around it.
+**Action:** Define thresholds and notification targets during pilot. Test with 2-3 products first.
+
 ---
 
 ## Long-Term Vision: MCP-Native Platform (Option D)
@@ -1213,3 +1380,19 @@ The current architecture (CLI + webapp) is the right starting point. The long-te
 **Prerequisites:** MCP authorization spec stable; CLI + webapp proven with pilot first.
 
 **Migration path:** CLI analyzers and generators become the Core Engine; webapp becomes Admin Portal; MCP Gateway is the new component. Evolution, not rewrite.
+
+---
+
+## Risk Register
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Cursor hooks API breaking changes | High | Medium | Version pinning, `cursor-compatibility.yaml`, feature detection, regression tests after Cursor releases |
+| PM adoption lower than expected | High | Medium | Guided first contribution, support model (DP-8), trust-building progression, low-risk starting tasks |
+| Rule quality insufficient for 80% target | High | Medium | Rule validation/smoke test, deep analysis review, feedback loop, overrides system |
+| Engineer resistance to PM-authored PRs | Medium | Medium | Address in pilot retrospective; executive sponsorship if needed |
+| ENAMETOOLONG blocks hooks on Windows | Medium | Low | `cli.json` (Layer 3) as fallback; test on Windows during pilot; most PM edits touch smaller files |
+| Scope creep (18 analyzers + DS + patterns + flows + webapp) | Medium | High | Incremental delivery; build and ship phase by phase; MVP is Phase 1-3 for pilot products |
+| Monorepo complexity exceeds estimates | Medium | Low | Monorepo support is additive; single-repo path unaffected |
+| Cursor deep analysis output inconsistency | Medium | Medium | Output schema validation, human review step, deterministic heuristic layer as baseline |
+| Stale rules at scale (50+ products) | Medium | High | Automated drift detection (DP-9), CI integration, scheduled scans |

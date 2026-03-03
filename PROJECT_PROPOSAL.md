@@ -3,7 +3,7 @@
 > **Document type**: High-level project proposal  
 > **Status**: Draft — for stakeholder review  
 > **Last updated**: Feb 2026  
-> **Technical implementation plan**: Deferred; see [.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md](.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
+> **Technical implementation plan**: Deferred; see [product_builders_agent_generator_cb6755d9.plan.md](product_builders_agent_generator_cb6755d9.plan.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
@@ -43,6 +43,7 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
    - Produces onboarding guides and AI review checklists
    - Runs locally; no external LLM API keys
    - Commands: `analyze`, `generate`, `setup`, `export`, `list`, `bulk-analyze`
+   - Monorepo support via `--sub-project` flag (namespaced rules per sub-project)
 
 2. **Web application** (FastAPI + Jinja2)
    - Documentation and getting-started guides
@@ -55,6 +56,8 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 - **Phase 1 (Heuristic)**: CLI runs 18 analyzers locally — tech stack, database, auth, dependencies, conventions, etc. Produces a Product Profile (JSON).
 - **Phase 2 (Deep)**: Tool generates a bootstrap meta-rule; Cursor runs a 4-step analysis (~10 min) using its own codebase index and LLM. Enriches the profile.
 - **Output**: 14 Cursor rules, hooks, permissions, onboarding guide — all tailored to the product and contributor profile.
+
+**Delivery is incremental.** Phase 1-3 (foundation + 8 core analyzers + rule generation + governance) for pilot products is the first deliverable. Remaining analyzers, webapp content, lifecycle automation, and monorepo support are delivered as ready.
 
 ---
 
@@ -72,7 +75,7 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 
 ### Contributor Profiles: 5 Roles
 
-- **Engineer**: Full access; hooks warn only
+- **Engineer**: Full access; no scope-check hooks installed (hooks.json omits scope-check for engineer profile; cli.json has no restrictions)
 - **Technical PM**: Frontend + API; backend read-only; hooks warn on critical ops
 - **Product Manager**: Frontend only; backend/API read-only; hooks block on dangerous ops
 - **Designer**: UI zones only; strictest permissions
@@ -126,7 +129,8 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 1. Contributor clones product repo
 2. Runs `product-builders setup --profile pm` (or designer, technical_pm, qa, engineer)
 3. Opens Cursor; rules and hooks auto-load
-4. Ready to contribute
+4. Follows the **guided first contribution** ("Hello World" task in onboarding guide) to learn the flow with zero risk
+5. Progresses from low-risk tasks (copy/style changes) to feature work as confidence builds
 
 ### Day-to-Day Contribution
 
@@ -179,6 +183,8 @@ Evolution toward MCP-native platform:
 - **DP-5**: Zone definitions per product (`scopes.yaml`)
 - **DP-6**: Cursor Enterprise (parked; not blocking)
 - **DP-7**: Design system integration strategy (extraction method, DS inventory, per-product adoption)
+- **DP-8**: PM support model and escalation path (Slack channel, buddy system, office hours, FAQ)
+- **DP-9**: Automated rule staleness detection and maintenance operations (drift thresholds, notifications, automation level)
 
 ---
 
@@ -186,4 +192,4 @@ Evolution toward MCP-native platform:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Full architecture, diagrams, resolved decisions
 - [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) — Cursor hooks validation research (preToolUse, ENAMETOOLONG, best practices)
-- [.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md](.cursor/plans/product_builders_agent_generator_cb6755d9.plan.md) — Implementation plan and todos
+- [product_builders_agent_generator_cb6755d9.plan.md](product_builders_agent_generator_cb6755d9.plan.md) — Implementation plan and todos
