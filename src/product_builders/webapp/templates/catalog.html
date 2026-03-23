@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Product catalog{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <h1 class="page-title">Product catalog</h1>
+  <p class="lede narrow">
+    Profiles found under <code>PB_PROFILES_DIR</code> (default: <code>profiles/</code> relative to the app).
+    Each row links to analysis metadata and onboarding guides.
+  </p>
+</section>
+
+{% if not products %}
+<p class="muted">No profile directories found. Run <code>product-builders analyze …</code> first.</p>
+{% else %}
+<table class="catalog-table">
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th>Language</th>
+      <th>Last analyzed</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in products %}
+    <tr>
+      <td><a href="/products/{{ p.name }}">{{ p.name }}</a></td>
+      <td>{{ p.primary_language or "—" }}</td>
+      <td class="muted">{{ p.analysis_timestamp or "—" }}</td>
+      <td>{% if p.has_analysis %}<span class="badge ok">profile</span>{% else %}<span class="badge warn">no analysis.json</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

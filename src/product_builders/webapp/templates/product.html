@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <p class="eyebrow">Profile</p>
+  <h1 class="page-title">{{ product.name }}</h1>
+  {% if product.description %}
+  <p class="lede">{{ product.description }}</p>
+  {% endif %}
+  <dl class="meta-dl">
+    <dt>Primary language</dt>
+    <dd>{{ product.primary_language or "—" }}</dd>
+    <dt>Last analyzed</dt>
+    <dd>{{ product.analysis_timestamp or "—" }}</dd>
+  </dl>
+</section>
+
+<section class="install-block">
+  <h2>Onboarding guides</h2>
+  {% if not onboarding_roles %}
+  <p class="muted">No <code>docs/onboarding-*.md</code> files yet. Run <code>product-builders generate --name {{ product.name }}</code>.</p>
+  {% else %}
+  <ul class="doc-link-list">
+    {% for role, label in onboarding_roles %}
+    <li><a href="/products/{{ product.name }}/onboarding/{{ role }}">{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

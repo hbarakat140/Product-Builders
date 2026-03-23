@@ -47,13 +47,13 @@
 | state-mgmt-analyzer | Implement state management analyzer | Phase 4 | **done** |
 | env-config-analyzer | Implement environment & configuration analyzer | Phase 4 | **done** |
 | perf-analyzer | Implement performance patterns analyzer | Phase 4 | **done** |
-| webapp-scaffold | Create webapp scaffold (FastAPI + Jinja2, landing page, CLI download page) | Phase 1 | pending |
-| webapp-docs | Build documentation pages and per-profile onboarding guides in webapp | Phase 3 | pending |
-| webapp-catalog | Build product catalog page (read-only list of analyzed products) | Phase 3 | pending |
-| rule-validation | Implement rule validation & quality testing framework | Phase 5 | pending |
-| rule-lifecycle | Implement rule lifecycle management (re-analysis triggers, drift detection) | Phase 5 | pending |
-| bg-agent-api | Integrate Cursor Background Agent API for automated bulk analysis | Phase 5 | pending |
-| metrics | Implement metrics & observability for rule effectiveness | Phase 5 | pending |
+| webapp-scaffold | Create webapp scaffold (FastAPI + Jinja2, landing page, CLI download page) | Phase 1 | **done** |
+| webapp-docs | Build documentation pages and per-profile onboarding guides in webapp | Phase 3 | **done** |
+| webapp-catalog | Build product catalog page (read-only list of analyzed products) | Phase 3 | **done** |
+| rule-validation | Implement rule validation & quality testing framework | Phase 5 | **done** |
+| rule-lifecycle | Implement rule lifecycle management (re-analysis triggers, drift detection) | Phase 5 | **done** |
+| bg-agent-api | Integrate Cursor Background Agent API for automated bulk analysis | Phase 5 | **deferred** (API TBD; no in-repo stub) |
+| metrics | Implement metrics & observability for rule effectiveness | Phase 5 | **done** (JSONL + `metrics` CLI) |
 
 ---
 
@@ -73,7 +73,7 @@ Build a CLI tool and web application that automatically analyze product codebase
 | **Phase 2** | Core analyzers | 8 analyzers: tech stack, structure, deps, conventions, database, auth, error handling, git workflow | **done** |
 | **Phase 3** | Rule generation + governance | 17 rule templates, generators, scopes system, bootstrap, export, onboarding, review checklist, company standards integration | **done** |
 | **Phase 4** | Remaining analyzers | 12 analyzers: security, testing, cicd, design, frontend patterns, user flows, a11y, api, i18n, state mgmt, env config, performance | **done** |
-| **Phase 5** | Automation & lifecycle | Rule validation, drift detection, feedback, versioning, Background Agent API, metrics | pending |
+| **Phase 5** | Automation & lifecycle | Rule validation, drift detection, feedback, versioning, Background Agent API, metrics | **done** (bg-agent deferred) |
 
 ---
 

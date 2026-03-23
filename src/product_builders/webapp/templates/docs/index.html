@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Documentation{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <h1 class="page-title">Documentation</h1>
+  <p class="lede narrow">Guides shipped with this server. For the full architecture, see the repository’s <code>ARCHITECTURE.md</code>.</p>
+</section>
+<ul class="doc-link-list">
+  {% for slug, label in doc_pages %}
+  <li><a href="/docs/{{ slug }}">{{ label }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

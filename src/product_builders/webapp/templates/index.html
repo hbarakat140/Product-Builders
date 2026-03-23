@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">CLI + agents</p>
+  <h1 class="hero-title">Rules that match <em>your</em> product</h1>
+  <p class="lede">
+    Analyze a codebase offline, enrich with deep context, then generate Cursor rules,
+    hooks, permissions, and onboarding — so every contributor works with the same guardrails.
+  </p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="/download">Install the CLI</a>
+    <a class="btn btn-ghost" href="/api/docs">Open API docs</a>
+  </div>
+</section>
+
+<section class="grid-3">
+  <article class="card">
+    <h2>Heuristic analysis</h2>
+    <p>Stack, structure, security, testing, CI/CD, i18n, APIs, and more — no cloud required for the baseline pass.</p>
+  </article>
+  <article class="card">
+    <h2>Three-layer governance</h2>
+    <p>Soft rules (<code>.mdc</code>), smart hooks, and hard CLI permissions — aligned with contributor scopes.</p>
+  </article>
+  <article class="card">
+    <h2>Company standards</h2>
+    <p>Merge org-wide YAML policies into generated rules so security and quality stay consistent.</p>
+  </article>
+</section>
+{% endblock %}

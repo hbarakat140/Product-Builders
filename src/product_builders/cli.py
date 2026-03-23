@@ -8,6 +8,7 @@ Commands:
   list          List all analyzed products
   bulk-analyze  Analyze multiple products from manifest or monorepo
   check-drift   Check if rules are stale vs. the codebase
+  metrics       Show recent metrics events for a product
   feedback      Record feedback on a rule's accuracy
 """
 
@@ -25,6 +26,7 @@ from rich.table import Table
 
 from product_builders import __version__
 from product_builders.config import Config, validate_product_name
+from product_builders.models.heuristic_dimensions import HEURISTIC_PROFILE_FIELDS
 from product_builders.models.profile import ProductMetadata, ProductProfile
 from product_builders.profiles.base import get_profile, resolve_role
 
@@ -129,7 +131,7 @@ def analyze(
         results_table.add_column("Details")
 
         for analyzer in analyzer_instances:
-            if analyzer.dimension not in _VALID_DIMENSIONS:
+            if analyzer.dimension not in HEURISTIC_PROFILE_FIELDS:
                 logging.getLogger(__name__).warning(
                     "Analyzer '%s' has unknown dimension '%s', skipping",
                     analyzer.name, analyzer.dimension,
@@ -160,6 +162,14 @@ def analyze(
 
     profile.scopes = generate_scope_config(profile, analysis_root)
     console.print(f"\n[green]Detected {len(profile.scopes.zones)} zones[/green]")
+
+    # Record git HEAD for drift detection (repository root, not sub-project)
+    from product_builders.gitutil import get_git_head_sha
+
+    git_sha = get_git_head_sha(repo)
+    if git_sha:
+        profile.metadata.last_commit_sha = git_sha
+        console.print(f"[dim]Recorded git HEAD {git_sha[:12]}… for drift checks[/dim]")
 
     # Save profile
     output_path = config.get_analysis_path(name)
@@ -246,8 +256,26 @@ def generate(ctx: click.Context, name: str, role_alias: str | None, validate: bo
 
     if validate:
         console.print("\n[bold]Running structural validation...[/bold]")
-        # TODO: implement validation in Phase 5
-        console.print("[yellow]Validation not yet implemented.[/yellow]")
+        from product_builders.metrics import record_event
+        from product_builders.validation import validate_product_profile_dir
+
+        report = validate_product_profile_dir(output_dir)
+        for w in report.warnings:
+            console.print(f"  [yellow]⚠[/yellow] {w}")
+        for err in report.errors:
+            console.print(f"  [red]✗[/red] {err}")
+        if report.ok:
+            console.print("[green]Validation passed (no errors).[/green]")
+            record_event(output_dir, "validate_ok", errors=0, warnings=len(report.warnings))
+        else:
+            console.print(f"[red]Validation failed with {len(report.errors)} error(s).[/red]")
+            record_event(
+                output_dir,
+                "validate_failed",
+                errors=len(report.errors),
+                warnings=len(report.warnings),
+            )
+            raise click.ClickException("Structural validation failed.")
 
 
 # ---------------------------------------------------------------------------
@@ -530,9 +558,14 @@ def bulk_analyze(ctx: click.Context, manifest: str | None, monorepo: str | None)
 @main.command(name="check-drift")
 @click.option("--name", "-n", required=True, help="Product name.")
 @click.option("--repo", "-r", required=True, type=click.Path(exists=True, file_okay=False, resolve_path=True), help="Path to the product repo.")
+@click.option(
+    "--full",
+    is_flag=True,
+    help="Re-run all heuristic analyzers and compare fingerprints (slower, no git required).",
+)
 @click.pass_context
-def check_drift(ctx: click.Context, name: str, repo: str) -> None:
-    """Check if rules are stale vs. the current codebase."""
+def check_drift(ctx: click.Context, name: str, repo: str, full: bool) -> None:
+    """Check if the cached profile is stale vs. the current codebase (git HEAD and/or heuristics)."""
     config: Config = ctx.obj["config"]
 
     try:
@@ -543,10 +576,85 @@ def check_drift(ctx: click.Context, name: str, repo: str) -> None:
     if not profile_path.exists():
         raise click.ClickException(f"No profile found for '{name}'.")
 
+    profile = ProductProfile.load(profile_path)
+    repo_path = Path(repo)
+
     console.print(f"\n[bold blue]Checking drift[/bold blue] for [green]{name}[/green]\n")
 
-    # TODO: Implement hash-based and git-based drift detection (Phase 5)
-    console.print("[yellow]Drift detection not yet implemented (Phase 5).[/yellow]")
+    from product_builders.lifecycle.drift import run_drift_check
+    from product_builders.metrics import record_event
+
+    report = run_drift_check(profile, repo_path, full=full)
+
+    if report.git_drift:
+        console.print(f"[yellow]{report.git_message}[/yellow]")
+    elif report.no_git_sha_in_profile or report.git_head_unreadable:
+        console.print(f"[yellow]{report.git_message}[/yellow]")
+    else:
+        console.print(f"[green]{report.git_message}[/green]")
+
+    if full:
+        console.print()
+        if report.full_check_failed:
+            console.print(f"[red]{report.full_message}[/red]")
+        elif report.full_drift:
+            console.print(f"[yellow]{report.full_message}[/yellow]")
+        elif report.full_message:
+            console.print(f"[green]{report.full_message}[/green]")
+
+    product_dir = config.get_product_dir(name)
+    record_event(
+        product_dir,
+        "check_drift",
+        git_drift=report.git_drift,
+        full=full,
+        full_drift=report.full_drift,
+        full_check_failed=report.full_check_failed,
+    )
+
+    if report.full_check_failed:
+        raise click.ClickException("Full heuristic check failed (see above).")
+
+    any_issue = report.git_drift or (full and report.full_drift is True)
+    if any_issue:
+        console.print(
+            "\n[dim]Tip: run[/dim] [cyan]product-builders analyze[/cyan] [dim]on the repo to refresh the profile, "
+            "then[/dim] [cyan]generate[/cyan][dim].[/dim]"
+        )
+        raise click.ClickException("Drift detected.")
+
+
+# ---------------------------------------------------------------------------
+# metrics
+# ---------------------------------------------------------------------------
+
+@main.command("metrics")
+@click.option("--name", "-n", required=True, help="Product name.")
+@click.option("--limit", default=80, help="Max recent events to print.")
+@click.pass_context
+def show_metrics(ctx: click.Context, name: str, limit: int) -> None:
+    """Show recent metrics events (JSON Lines) for a product profile."""
+    config: Config = ctx.obj["config"]
+
+    try:
+        product_dir = config.get_product_dir(name)
+    except ValueError as e:
+        raise click.BadParameter(str(e), param_hint="'--name'") from e
+
+    from product_builders.metrics import read_recent_events
+
+    events = read_recent_events(product_dir, limit=limit)
+    if not events:
+        console.print("[yellow]No metrics.jsonl yet. Run validate, check-drift, etc.[/yellow]")
+        return
+
+    console.print(f"\n[bold]Recent metrics for[/bold] [green]{name}[/green] ({len(events)} events)\n")
+    for ev in events:
+        ts = ev.get("ts", "?")
+        event = ev.get("event", "?")
+        rest = {k: v for k, v in ev.items() if k not in ("ts", "event")}
+        extra = f" {rest}" if rest else ""
+        console.print(f"  [dim]{ts}[/dim]  [cyan]{event}[/cyan]{extra}")
 
 
 # ---------------------------------------------------------------------------

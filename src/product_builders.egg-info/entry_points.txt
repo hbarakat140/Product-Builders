@@ -1,2 +1,3 @@
 [console_scripts]
 product-builders = product_builders.cli:main
+product-builders-web = product_builders.webapp.__main__:main

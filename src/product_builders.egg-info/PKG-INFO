@@ -14,11 +14,13 @@ Requires-Dist: pydantic>=2.0
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: httpx>=0.27; extra == "dev"
 Requires-Dist: ruff>=0.4; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
 Provides-Extra: webapp
 Requires-Dist: fastapi>=0.111; extra == "webapp"
 Requires-Dist: uvicorn[standard]>=0.30; extra == "webapp"
+Requires-Dist: markdown>=3.5; extra == "webapp"
 
 # Product Builders
 
@@ -28,6 +30,40 @@ A CLI tool and web application that analyzes product codebases and generates tai
 
 - [PROJECT_PROPOSAL.md](PROJECT_PROPOSAL.md) — High-level proposal and major decisions
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Solution architecture, diagrams, implementation phases
-- [product_builders_agent_generator_cb6755d9.plan.md](product_builders_agent_generator_cb6755d9.plan.md) — Implementation plan and todos
+- [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) — Implementation plan and todos
 - [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) — Cursor hooks validation research (preToolUse, ENAMETOOLONG, best practices)
 
+## Installation
+
+```bash
+pip install -e .
+# CLI: product-builders --help
+```
+
+Optional web UI and API docs:
+
+```bash
+pip install -e ".[webapp]"
+```
+
+## CLI (quick start)
+
+```bash
+product-builders analyze /path/to/repo --name my-product --heuristic-only
+product-builders generate --name my-product
+```
+
+See `--help` on each command for options.
+
+## Web application
+
+FastAPI + Jinja2 — landing page, install/download instructions, OpenAPI at `/api/docs`.
+
+```bash
+pip install -e ".[webapp]"
+python -m product_builders.webapp --reload
+# or: uvicorn product_builders.webapp.app:app --reload
+# or: product-builders-web --reload
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000). Health check: `GET /health`.
