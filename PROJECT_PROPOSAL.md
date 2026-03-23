@@ -3,7 +3,7 @@
 > **Document type**: High-level project proposal  
 > **Status**: Draft — for stakeholder review  
 > **Last updated**: Feb 2026  
-> **Technical implementation plan**: Deferred; see [product_builders_agent_generator_cb6755d9.plan.md](product_builders_agent_generator_cb6755d9.plan.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
+> **Technical implementation plan**: Deferred; see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
@@ -192,4 +192,4 @@ Evolution toward MCP-native platform:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Full architecture, diagrams, resolved decisions
 - [docs/HOOKS_RESEARCH.md](docs/HOOKS_RESEARCH.md) — Cursor hooks validation research (preToolUse, ENAMETOOLONG, best practices)
-- [product_builders_agent_generator_cb6755d9.plan.md](product_builders_agent_generator_cb6755d9.plan.md) — Implementation plan and todos
+- [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) — Implementation plan and todos

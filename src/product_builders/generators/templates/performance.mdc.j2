@@ -65,3 +65,11 @@ Tool: **{{ profile.performance.image_optimization }}**
 
 All images must go through the optimization pipeline.
 {% endif %}
+
+{% if company_standards and company_standards.performance %}
+## Company Performance Standards
+
+{% for rule in company_standards.performance.rules %}
+- **{{ rule.id }}** ({{ rule.severity }}): {{ rule.description }}
+{% endfor %}
+{% endif %}

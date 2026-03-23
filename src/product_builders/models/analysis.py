@@ -1,4 +1,4 @@
-"""Analysis result models for all 18 heuristic dimensions.
+"""Analysis result models for heuristic dimensions (core + extended).
 
 Each model captures the output of one analyzer. Together they form
 the ProductProfile — the intermediate representation from which
@@ -225,7 +225,13 @@ class CICDResult(AnalysisResult):
     config_path: str | None = None
     build_steps: list[str] = Field(default_factory=list)
     deployment_targets: list[str] = Field(default_factory=list)
-    required_checks: list[str] = Field(default_factory=list)
+    required_checks: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Reserved: branch-protection required checks are not detectable offline; "
+            "kept empty unless populated by a future integration."
+        ),
+    )
 
 
 class DesignUIResult(AnalysisResult):
@@ -277,6 +283,31 @@ class PerformanceResult(AnalysisResult):
     image_optimization: str | None = None
     n_plus_one_prevention: str | None = None
     performance_monitoring: str | None = None
+
+
+class FrontendPatternsResult(AnalysisResult):
+    """Dimension: Frontend UI patterns (layout, forms, modals, lists, error, loading)."""
+
+    layout_patterns: list[str] = Field(default_factory=list)
+    form_libraries: list[str] = Field(default_factory=list)
+    modal_pattern: str | None = None
+    list_virtualization: str | None = None
+    error_boundary: bool = False
+    loading_patterns: list[str] = Field(default_factory=list)
+    routing_library: str | None = None
+    animation_library: str | None = None
+
+
+class UserFlowsResult(AnalysisResult):
+    """Dimension: User flows (route structure, navigation graph, task flows)."""
+
+    route_count: int = 0
+    route_files: list[str] = Field(default_factory=list)
+    navigation_type: str | None = None
+    auth_protected_routes: bool = False
+    has_404_page: bool = False
+    has_error_page: bool = False
+    page_directories: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

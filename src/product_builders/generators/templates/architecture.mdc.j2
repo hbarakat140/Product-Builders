@@ -1,0 +1,66 @@
+---
+description: "Architecture and module boundaries for {{ profile.metadata.name }}"
+globs:
+alwaysApply: false
+priority: 40
+---
+
+# Architecture
+
+{% if profile.structure.module_organization %}
+**Organization**: {{ profile.structure.module_organization }}
+{% endif %}
+
+{% if profile.architecture_deep.layering_pattern %}
+## Layering Pattern
+
+{{ profile.architecture_deep.layering_pattern }}
+
+{% if profile.architecture_deep.dependency_direction %}
+**Dependency direction**: {{ profile.architecture_deep.dependency_direction }}
+{% endif %}
+{% endif %}
+
+## Module Boundaries
+
+{% if profile.architecture_deep.module_boundaries %}
+{% for module, deps in profile.architecture_deep.module_boundaries.items() %}
+- **{{ module }}** → {{ deps | join(', ') }}
+{% endfor %}
+
+> Respect these boundaries. Do not introduce circular dependencies.
+{% elif profile.structure.key_directories %}
+Key modules:
+
+{% for dir in profile.structure.key_directories %}
+- `{{ dir.path }}`{% if dir.purpose %} — {{ dir.purpose }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if profile.architecture_deep.bounded_contexts %}
+## Bounded Contexts
+
+{% for ctx in profile.architecture_deep.bounded_contexts %}
+- {{ ctx }}
+{% endfor %}
+
+> Keep domain concepts within their bounded context. Cross-context communication should use defined interfaces.
+{% endif %}
+
+{% if profile.structure.source_directories %}
+## Source Layout
+
+{% for dir in profile.structure.source_directories %}
+- `{{ dir }}/`
+{% endfor %}
+
+> Place new code in the appropriate directory following the existing structure.
+{% endif %}
+
+## Rules
+
+1. Follow the existing module organization — do not restructure without explicit approval
+2. Keep dependencies flowing in one direction (see module boundaries above)
+3. New modules should follow the same patterns as existing ones
+4. Shared utilities go in the designated utilities/helpers directory

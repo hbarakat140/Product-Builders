@@ -27,6 +27,7 @@ from product_builders.models.analysis import (
     DomainModelDeepResult,
     EnvConfigResult,
     ErrorHandlingResult,
+    FrontendPatternsResult,
     GitWorkflowResult,
     I18nResult,
     ImplicitConventionsDeepResult,
@@ -36,6 +37,7 @@ from product_builders.models.analysis import (
     StructureResult,
     TechStackResult,
     TestingResult,
+    UserFlowsResult,
 )
 from product_builders.models.scopes import ScopeConfig
 
@@ -58,10 +60,10 @@ class ProductMetadata(BaseModel):
 
 
 class ProductProfile(BaseModel):
-    """Complete product profile — all 18 dimensions + deep analysis + scopes.
+    """Complete product profile — 20 heuristic dimensions + deep analysis + scopes.
 
     This is the single source of truth from which all outputs are generated:
-    - 14 Cursor rule files (.mdc)
+    - 17 Cursor rule files (.mdc)
     - hooks.json (Layer 2)
     - cli.json (Layer 3)
     - Onboarding guide
@@ -94,6 +96,8 @@ class ProductProfile(BaseModel):
     accessibility: AccessibilityResult = Field(default_factory=AccessibilityResult)
     api: APIResult = Field(default_factory=APIResult)
     performance: PerformanceResult = Field(default_factory=PerformanceResult)
+    frontend_patterns: FrontendPatternsResult = Field(default_factory=FrontendPatternsResult)
+    user_flows: UserFlowsResult = Field(default_factory=UserFlowsResult)
 
     # DEEP — Populated by Cursor-assisted analysis (Phase 2)
     architecture_deep: ArchitectureDeepResult = Field(
@@ -140,4 +144,6 @@ class ProductProfile(BaseModel):
             "accessibility": self.accessibility,
             "api": self.api,
             "performance": self.performance,
+            "frontend_patterns": self.frontend_patterns,
+            "user_flows": self.user_flows,
         }

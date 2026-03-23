@@ -221,12 +221,19 @@ def generate(ctx: click.Context, name: str, role_alias: str | None, validate: bo
         console.print(f"  Contributor profile: [cyan]{get_profile(role).display_name}[/cyan]")
 
     from product_builders.generators import registry as gen_registry
+    from product_builders.generators.cursor_rules import CursorRulesGenerator
+
+    company_standards = config.load_company_standards()
+    if company_standards:
+        console.print(f"  Loaded {len(company_standards)} company standards: {', '.join(company_standards.keys())}")
 
     generators = gen_registry.get_all_generators()
     output_dir = config.get_product_dir(name)
 
     all_files: list[Path] = []
     for gen in generators:
+        if isinstance(gen, CursorRulesGenerator) and company_standards:
+            gen.set_company_standards(company_standards)
         files = gen.generate(profile, output_dir, role=role)
         all_files.extend(files)
 
@@ -239,7 +246,7 @@ def generate(ctx: click.Context, name: str, role_alias: str | None, validate: bo
 
     if validate:
         console.print("\n[bold]Running structural validation...[/bold]")
-        # TODO: implement validation in Phase 3
+        # TODO: implement validation in Phase 5
         console.print("[yellow]Validation not yet implemented.[/yellow]")
 
 
@@ -310,9 +317,14 @@ def setup(ctx: click.Context, name: str, role_alias: str) -> None:
 
     # Generate all 3 governance layers
     from product_builders.generators import registry as gen_registry
+    from product_builders.generators.cursor_rules import CursorRulesGenerator
+
+    company_standards = config.load_company_standards()
 
     all_files: list[Path] = []
     for gen in gen_registry.get_all_generators():
+        if isinstance(gen, CursorRulesGenerator) and company_standards:
+            gen.set_company_standards(company_standards)
         files = gen.generate(profile, cwd, role=role)
         all_files.extend(files)
 

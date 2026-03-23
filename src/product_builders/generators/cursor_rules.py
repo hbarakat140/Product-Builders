@@ -1,4 +1,4 @@
-"""Cursor Rules Generator — generates 14 .mdc rule files from templates.
+"""Cursor Rules Generator — generates .mdc rule files from templates.
 
 Each .mdc file is a Cursor Rule that provides AI assistants with
 product-specific context and constraints. The rules are rendered
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from product_builders.generators.base import BaseGenerator
 from product_builders.generators.registry import register
@@ -26,6 +27,8 @@ RULE_TEMPLATES: list[tuple[str, str]] = [
     ("database.mdc.j2", "database.mdc"),
     ("auth-patterns.mdc.j2", "auth-patterns.mdc"),
     ("error-handling.mdc.j2", "error-handling.mdc"),
+    ("architecture.mdc.j2", "architecture.mdc"),
+    ("coding-conventions.mdc.j2", "coding-conventions.mdc"),
     ("testing.mdc.j2", "testing.mdc"),
     ("git-workflow.mdc.j2", "git-workflow.mdc"),
     ("design-system.mdc.j2", "design-system.mdc"),
@@ -33,6 +36,7 @@ RULE_TEMPLATES: list[tuple[str, str]] = [
     ("security.mdc.j2", "security.mdc"),
     ("api-patterns.mdc.j2", "api-patterns.mdc"),
     ("i18n.mdc.j2", "i18n.mdc"),
+    ("state-and-config.mdc.j2", "state-and-config.mdc"),
     ("performance.mdc.j2", "performance.mdc"),
     ("contributor-guide.mdc.j2", "contributor-guide.mdc"),
 ]
@@ -43,11 +47,26 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
     checks: dict[str, bool] = {
         "database.mdc.j2": profile.database.orm is not None or profile.database.database_type is not None,
         "auth-patterns.mdc.j2": profile.auth.auth_strategy is not None or bool(profile.auth.auth_directories),
+        "architecture.mdc.j2": (
+            profile.architecture_deep.layering_pattern is not None
+            or bool(profile.architecture_deep.module_boundaries)
+            or bool(profile.structure.key_directories)
+        ),
+        "coding-conventions.mdc.j2": (
+            profile.conventions.linter is not None
+            or profile.conventions.formatter is not None
+            or profile.conventions.naming_convention is not None
+        ),
         "testing.mdc.j2": profile.testing.test_framework is not None,
         "design-system.mdc.j2": profile.design_ui.component_library is not None or profile.design_ui.css_methodology is not None,
         "accessibility.mdc.j2": profile.accessibility.wcag_level is not None or profile.accessibility.aria_usage_detected,
         "api-patterns.mdc.j2": profile.api.api_style is not None,
         "i18n.mdc.j2": profile.i18n.i18n_framework is not None,
+        "state-and-config.mdc.j2": (
+            profile.state_management.state_library is not None
+            or profile.env_config.config_approach is not None
+            or profile.env_config.has_docker
+        ),
         "performance.mdc.j2": (
             profile.performance.caching_strategy is not None
             or profile.performance.lazy_loading
@@ -70,9 +89,17 @@ def _build_zone_map(
 
 
 class CursorRulesGenerator(BaseGenerator):
+    def __init__(self) -> None:
+        super().__init__()
+        self._company_standards: dict[str, dict[str, Any]] = {}
+
     @property
     def name(self) -> str:
         return "Cursor Rules Generator"
+
+    def set_company_standards(self, standards: dict[str, dict[str, Any]]) -> None:
+        """Inject loaded company standards for merging into generated rules."""
+        self._company_standards = standards
 
     def generate(
         self,
@@ -89,7 +116,6 @@ class CursorRulesGenerator(BaseGenerator):
                 logger.info("Skipping %s (no relevant data)", output_name)
                 continue
 
-            # Contributor guide is role-specific
             if template_name == "contributor-guide.mdc.j2":
                 if role is None:
                     role = ContributorRole.ENGINEER
@@ -142,8 +168,11 @@ class CursorRulesGenerator(BaseGenerator):
     def _build_context(
         self, profile: ProductProfile, role: ContributorRole | None
     ) -> dict[str, object]:
-        """Build template context with profile and role info."""
-        ctx: dict[str, object] = {"profile": profile}
+        """Build template context with profile, role, and company standards."""
+        ctx: dict[str, object] = {
+            "profile": profile,
+            "company_standards": self._company_standards,
+        }
 
         if role:
             prof_def = DEFAULT_PROFILES.get(role)

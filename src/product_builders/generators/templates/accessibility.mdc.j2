@@ -46,6 +46,14 @@ This project uses ARIA attributes. Follow these guidelines:
 - Use `role` attributes only when semantic HTML is insufficient
 {% endif %}
 
+{% if company_standards and company_standards.accessibility %}
+## Company Accessibility Standards
+
+{% for rule in company_standards.accessibility.rules %}
+- **{{ rule.id }}** ({{ rule.severity }}): {{ rule.description }}
+{% endfor %}
+{% endif %}
+
 ## Checklist
 
 Before submitting any UI change:

@@ -6,7 +6,7 @@
     "repo_url": "",
     "git_platform": null,
     "sub_project": null,
-    "analysis_timestamp": "2026-03-16T13:48:11.721623Z",
+    "analysis_timestamp": "2026-03-23T14:24:47.778550Z",
     "analysis_version": "0.1.0",
     "last_commit_sha": null,
     "product_family": null
@@ -154,7 +154,7 @@
     "logging_framework": null,
     "logging_config_file": null,
     "monitoring_integration": null,
-    "error_response_format": "json",
+    "error_response_format": null,
     "custom_error_classes": [
       "XxxError",
       "XxxException"
@@ -225,6 +225,10 @@
         "purpose": "Documentation"
       },
       {
+        "path": "profiles/product-builders/docs",
+        "purpose": "Documentation"
+      },
+      {
         "path": "src",
         "purpose": "Source code"
       },
@@ -259,10 +263,10 @@
     "status": "success",
     "error_message": null,
     "raw_data": {},
-    "input_validation": null,
+    "input_validation": "pydantic",
     "cors_config": null,
     "secrets_management": null,
-    "csp_headers": false,
+    "csp_headers": true,
     "security_middleware": [],
     "vulnerability_scanning": null
   },
@@ -270,12 +274,14 @@
     "status": "success",
     "error_message": null,
     "raw_data": {},
-    "test_framework": null,
+    "test_framework": "pytest",
     "test_runner": null,
-    "test_directories": [],
+    "test_directories": [
+      "tests"
+    ],
     "test_file_pattern": null,
     "mocking_library": null,
-    "coverage_tool": null,
+    "coverage_tool": "pytest-cov",
     "coverage_config_path": null,
     "fixture_patterns": [],
     "e2e_framework": null
@@ -320,13 +326,13 @@
     "status": "success",
     "error_message": null,
     "raw_data": {},
-    "api_style": null,
+    "api_style": "rest",
     "route_structure": null,
     "api_directories": [],
     "openapi_spec_path": null,
-    "request_validation": null,
-    "response_format": null,
-    "pagination_pattern": null,
+    "request_validation": "pydantic",
+    "response_format": "json",
+    "pagination_pattern": "cursor-based",
     "versioning_strategy": null
   },
   "performance": {
@@ -340,6 +346,31 @@
     "image_optimization": null,
     "n_plus_one_prevention": null,
     "performance_monitoring": null
+  },
+  "frontend_patterns": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "layout_patterns": [],
+    "form_libraries": [],
+    "modal_pattern": null,
+    "list_virtualization": null,
+    "error_boundary": false,
+    "loading_patterns": [],
+    "routing_library": null,
+    "animation_library": null
+  },
+  "user_flows": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "route_count": 0,
+    "route_files": [],
+    "navigation_type": null,
+    "auth_protected_routes": false,
+    "has_404_page": false,
+    "has_error_page": false,
+    "page_directories": []
   },
   "architecture_deep": {
     "layering_pattern": null,

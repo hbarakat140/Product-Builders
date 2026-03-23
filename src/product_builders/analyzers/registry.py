@@ -41,6 +41,9 @@ def get_analyzer(dimension: str) -> BaseAnalyzer | None:
 _ANALYZER_MODULES = [
     "tech_stack", "structure", "dependencies", "conventions",
     "database", "auth", "error_handling", "git_workflow",
+    "security", "testing", "cicd", "design", "accessibility",
+    "api", "i18n", "state_management", "env_config", "performance",
+    "frontend_patterns", "user_flows",
 ]
 
 for _mod_name in _ANALYZER_MODULES:

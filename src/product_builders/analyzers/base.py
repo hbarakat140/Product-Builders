@@ -122,3 +122,46 @@ class BaseAnalyzer(ABC):
             return yaml.safe_load(content)
         except yaml.YAMLError:
             return None
+
+    def collect_dependency_names(
+        self,
+        repo_path: Path,
+        *,
+        include_requirements_txt: bool = True,
+        pyproject_substrings: frozenset[str] | None = None,
+    ) -> set[str]:
+        """Union of dependency names from package.json (+ optional requirements, pyproject hints).
+
+        ``pyproject_substrings``: if a substring appears anywhere in ``pyproject.toml``,
+        that substring is added to the set (offline heuristic for unpinned tools).
+        """
+        deps: set[str] = set()
+        pkg = self.read_json(repo_path / "package.json")
+        if pkg:
+            deps.update(pkg.get("dependencies", {}).keys())
+            deps.update(pkg.get("devDependencies", {}).keys())
+        if include_requirements_txt:
+            req = repo_path / "requirements.txt"
+            if req.exists():
+                content = self.read_file(req)
+                if content:
+                    for line in content.splitlines():
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            name = (
+                                line.split(">=")[0]
+                                .split("==")[0]
+                                .split("[")[0]
+                                .split("<")[0]
+                                .strip()
+                            )
+                            deps.add(name)
+        if pyproject_substrings:
+            pyproject = repo_path / "pyproject.toml"
+            if pyproject.exists():
+                content = self.read_file(pyproject)
+                if content:
+                    for s in pyproject_substrings:
+                        if s in content:
+                            deps.add(s)
+        return deps

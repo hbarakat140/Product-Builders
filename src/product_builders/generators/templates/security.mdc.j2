@@ -60,6 +60,14 @@ Do not remove or reorder security middleware.
 CSP headers are configured. Do not add `unsafe-inline` or `unsafe-eval` without security review.
 {% endif %}
 
+{% if company_standards and company_standards.security %}
+## Company Security Standards
+
+{% for rule in company_standards.security.rules %}
+- **{{ rule.id }}** ({{ rule.severity }}): {{ rule.description }}
+{% endfor %}
+{% endif %}
+
 ## Before You Submit
 
 - [ ] No secrets in code or configuration files

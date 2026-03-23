@@ -1,0 +1,79 @@
+---
+description: "State management and configuration patterns for {{ profile.metadata.name }}"
+globs:
+alwaysApply: false
+priority: 25
+---
+
+# State Management & Configuration
+
+{% if profile.state_management.state_library %}
+## State Management
+
+- **Library**: {{ profile.state_management.state_library }}
+{% if profile.state_management.data_fetching_library %}
+- **Data fetching**: {{ profile.state_management.data_fetching_library }}
+{% endif %}
+{% if profile.state_management.store_structure %}
+- **Store structure**: {{ profile.state_management.store_structure }}
+{% endif %}
+
+{% if profile.state_management.state_patterns %}
+### Patterns
+
+{% for pattern in profile.state_management.state_patterns %}
+- {{ pattern }}
+{% endfor %}
+{% endif %}
+
+> Use the existing state management library. Do not introduce alternative state solutions.
+{% endif %}
+
+{% if profile.env_config.config_approach %}
+## Configuration
+
+- **Approach**: {{ profile.env_config.config_approach }}
+{% if profile.env_config.feature_flags_system %}
+- **Feature flags**: {{ profile.env_config.feature_flags_system }}
+{% endif %}
+
+{% if profile.env_config.env_files %}
+### Environment Files
+
+{% for f in profile.env_config.env_files %}
+- `{{ f }}`
+{% endfor %}
+
+> Never commit `.env` files with real secrets. Use `.env.example` as a template.
+{% endif %}
+
+{% if profile.env_config.config_directories %}
+### Config Directories
+
+{% for dir in profile.env_config.config_directories %}
+- `{{ dir }}/`
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if profile.env_config.has_docker %}
+## Docker
+
+{% if profile.env_config.dockerfile_path %}
+- **Dockerfile**: `{{ profile.env_config.dockerfile_path }}`
+{% endif %}
+{% if profile.env_config.docker_compose_path %}
+- **Compose**: `{{ profile.env_config.docker_compose_path }}`
+{% endif %}
+{% endif %}
+
+## Rules
+
+1. Use environment variables or config files for environment-specific values — never hardcode
+{% if profile.state_management.state_library %}
+2. Manage application state through {{ profile.state_management.state_library }} — do not introduce alternative state libraries
+{% endif %}
+{% if profile.env_config.feature_flags_system %}
+3. Use {{ profile.env_config.feature_flags_system }} for feature toggles — do not use ad-hoc conditional logic
+{% endif %}
+4. Keep configuration separate from business logic
