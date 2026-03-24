@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from product_builders.analyzers.base import SKIP_DIRS, BaseAnalyzer
+from product_builders.analyzers.base import MAX_SOURCE_FILES_ERROR_HANDLING, BaseAnalyzer
 from product_builders.analyzers.registry import register
 from product_builders.models.analysis import AnalysisStatus, ErrorHandlingResult
 
@@ -56,9 +56,9 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
         logging_fw = self._detect_logging_framework(dep_names, repo_path)
         logging_config = self._detect_logging_config(repo_path)
         monitoring = self._detect_monitoring(dep_names)
-        error_strategy = self._detect_error_strategy(repo_path)
-        error_format = self._detect_error_response_format(repo_path)
-        custom_errors = self._detect_custom_error_classes(repo_path)
+        error_strategy, error_format, custom_errors = self._detect_error_patterns_combined(
+            repo_path
+        )
 
         return ErrorHandlingResult(
             status=AnalysisStatus.SUCCESS,
@@ -69,33 +69,6 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
             error_response_format=error_format,
             custom_error_classes=custom_errors,
         )
-
-    def _collect_dep_names(self, repo_path: Path) -> set[str]:
-        deps: set[str] = set()
-        pkg_json = repo_path / "package.json"
-        if pkg_json.exists():
-            data = self.read_json(pkg_json)
-            if data:
-                for section in ["dependencies", "devDependencies"]:
-                    deps.update(data.get(section, {}).keys())
-
-        for req_file in self.find_files(repo_path, "requirements*.txt"):
-            content = self.read_file(req_file)
-            if content:
-                for line in content.splitlines():
-                    line = line.strip()
-                    if line and not line.startswith(("#", "-")):
-                        name = re.split(r"[><=!~\[]", line)[0].strip()
-                        if name:
-                            deps.add(name)
-
-        for csproj in self.find_files(repo_path, "*.csproj"):
-            content = self.read_file(csproj)
-            if content:
-                for m in re.finditer(r'Include="([^"]+)"', content):
-                    deps.add(m.group(1))
-
-        return deps
 
     def _detect_logging_framework(self, dep_names: set[str], repo_path: Path) -> str | None:
         for fw, indicators in LOGGING_FRAMEWORK_INDICATORS.items():
@@ -109,7 +82,6 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
             content = self.read_file(py_file)
             if content and "import logging" in content:
                 return "python-logging"
-            break
 
         return None
 
@@ -137,97 +109,77 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
                 return monitor
         return None
 
-    def _detect_error_strategy(self, repo_path: Path) -> str | None:
-        src_dir = repo_path / "src"
-        scan_dir = src_dir if src_dir.is_dir() else repo_path
-        count = 0
+    def _detect_error_patterns_combined(
+        self, repo_path: Path
+    ) -> tuple[str | None, str | None, list[str]]:
+        """One repository pass for error strategy, JSON error responses, and custom error types."""
+        strategy_ext = frozenset({
+            ".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs", ".rs", ".go",
+        })
+        format_ext = frozenset({".ts", ".js", ".py", ".java", ".cs"})
+        custom_ext = frozenset({".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs"})
+        walk_ext = strategy_ext | custom_ext
 
         exception_count = 0
         result_type_count = 0
+        error_format: str | None = None
+        custom_errors: list[str] = []
 
-        for path in scan_dir.rglob("*"):
-            if count >= 30:
-                break
-            if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
-                continue
-            if path.suffix not in (".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs", ".rs", ".go"):
-                continue
+        for path, content in self._iter_source_files(
+            repo_path,
+            extensions=walk_ext,
+            max_files=MAX_SOURCE_FILES_ERROR_HANDLING,
+        ):
+            if path.suffix in strategy_ext:
+                exception_count += (
+                    content.count("throw ")
+                    + content.count("raise ")
+                    + content.count("throws ")
+                )
+                result_type_count += (
+                    content.count("Result<")
+                    + content.count("Either<")
+                    + content.count("Result.Ok")
+                )
 
-            content = self.read_file(path)
-            if not content:
-                continue
-            count += 1
+            if error_format is None and path.suffix in format_ext:
+                # Heuristic only: may match strings/comments; good enough for offline hints.
+                if re.search(
+                    r"(error|message|statusCode|status_code).*json",
+                    content,
+                    re.IGNORECASE,
+                ):
+                    error_format = "json"
+                elif re.search(r"\.json\(\s*\{.*error", content, re.IGNORECASE):
+                    error_format = "json"
 
-            exception_count += content.count("throw ") + content.count("raise ") + content.count("throws ")
-            result_type_count += content.count("Result<") + content.count("Either<") + content.count("Result.Ok")
+            if path.suffix in custom_ext:
+                for m in re.finditer(
+                    r"class\s+(\w+Error)\s+extends\s+(?:Error|BaseError|HttpException)",
+                    content,
+                ):
+                    if m.group(1) not in custom_errors:
+                        custom_errors.append(m.group(1))
+
+                for m in re.finditer(r"class\s+(\w+(?:Error|Exception))\s*\(", content):
+                    if m.group(1) not in custom_errors:
+                        custom_errors.append(m.group(1))
+
+                for m in re.finditer(
+                    r"class\s+(\w+Exception)\s+extends\s+\w+Exception",
+                    content,
+                ):
+                    if m.group(1) not in custom_errors:
+                        custom_errors.append(m.group(1))
 
         if result_type_count > exception_count and result_type_count > 0:
-            return "result-types"
-        if exception_count > 0:
-            return "exceptions"
-        return None
+            strategy: str | None = "result-types"
+        elif exception_count > 0:
+            strategy = "exceptions"
+        else:
+            strategy = None
 
-    def _detect_error_response_format(self, repo_path: Path) -> str | None:
-        src_dir = repo_path / "src"
-        scan_dir = src_dir if src_dir.is_dir() else repo_path
-        count = 0
-
-        for path in scan_dir.rglob("*"):
-            if count >= 15:
-                break
-            if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
-                continue
-            if path.suffix not in (".ts", ".js", ".py", ".java", ".cs"):
-                continue
-
-            content = self.read_file(path)
-            if not content:
-                continue
-            count += 1
-
-            # Look for error response structures
-            if re.search(r'(error|message|statusCode|status_code).*json', content, re.IGNORECASE):
-                return "json"
-            if re.search(r'\.json\(\s*\{.*error', content, re.IGNORECASE):
-                return "json"
-
-        return None
-
-    def _detect_custom_error_classes(self, repo_path: Path) -> list[str]:
-        custom_errors: list[str] = []
-        src_dir = repo_path / "src"
-        scan_dir = src_dir if src_dir.is_dir() else repo_path
-        count = 0
-
-        for path in scan_dir.rglob("*"):
-            if count >= 30:
-                break
-            if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
-                continue
-            if path.suffix not in (".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs"):
-                continue
-
-            content = self.read_file(path)
-            if not content:
-                continue
-            count += 1
-
-            # TypeScript/JavaScript: class XxxError extends Error
-            for m in re.finditer(r"class\s+(\w+Error)\s+extends\s+(?:Error|BaseError|HttpException)", content):
-                if m.group(1) not in custom_errors:
-                    custom_errors.append(m.group(1))
-
-            # Python: class XxxError(Exception) or class XxxError(BaseException)
-            for m in re.finditer(r"class\s+(\w+(?:Error|Exception))\s*\(", content):
-                if m.group(1) not in custom_errors:
-                    custom_errors.append(m.group(1))
-
-            # Java: class XxxException extends RuntimeException
-            for m in re.finditer(r"class\s+(\w+Exception)\s+extends\s+\w+Exception", content):
-                if m.group(1) not in custom_errors:
-                    custom_errors.append(m.group(1))
-
-        return custom_errors[:20]
+        return strategy, error_format, custom_errors[:20]
 
 
 register(ErrorHandlingAnalyzer())

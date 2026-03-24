@@ -11,8 +11,8 @@ import logging
 from pathlib import Path
 
 from product_builders.generators.base import BaseGenerator
-from product_builders.generators.cursor_rules import _build_zone_map
 from product_builders.generators.registry import register
+from product_builders.generators.scopes import build_zone_map
 from product_builders.models.profile import ProductProfile
 from product_builders.models.scopes import ContributorRole
 from product_builders.profiles.base import DEFAULT_PROFILES
@@ -58,9 +58,9 @@ class OnboardingGenerator(BaseGenerator):
         forbidden_zones: dict[str, list[str]] = {}
 
         if scope:
-            writable_zones = _build_zone_map(profile, scope.allowed_zones)
-            readonly_zones = _build_zone_map(profile, scope.read_only_zones)
-            forbidden_zones = _build_zone_map(profile, scope.forbidden_zones)
+            writable_zones = build_zone_map(profile, scope.allowed_zones)
+            readonly_zones = build_zone_map(profile, scope.read_only_zones)
+            forbidden_zones = build_zone_map(profile, scope.forbidden_zones)
 
         context = {
             "profile": profile,

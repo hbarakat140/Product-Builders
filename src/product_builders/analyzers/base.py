@@ -12,7 +12,9 @@ Analyzers are designed to be:
 from __future__ import annotations
 
 import logging
+import re
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from pathlib import Path
 from typing import TypeVar
 
@@ -28,6 +30,11 @@ SKIP_DIRS: frozenset[str] = frozenset({
     ".next", ".nuxt", "out", "target", "bin", "obj", ".gradle",
     "vendor", "coverage", ".turbo", ".nx", ".cache",
 })
+
+# Cost caps for repository scans (files successfully read with content)
+MAX_SOURCE_FILES_AUTH_PERMISSION = 30
+MAX_SOURCE_FILES_AUTH_PROTECTED = 20
+MAX_SOURCE_FILES_ERROR_HANDLING = 30
 
 
 class BaseAnalyzer(ABC):
@@ -123,6 +130,80 @@ class BaseAnalyzer(ABC):
         except yaml.YAMLError:
             return None
 
+    def _get_scan_root(self, repo_path: Path) -> Path:
+        """Prefer ``src/`` when present, else repository root."""
+        src = repo_path / "src"
+        return src if src.is_dir() else repo_path
+
+    def _iter_source_files(
+        self,
+        repo_path: Path,
+        *,
+        extensions: frozenset[str],
+        max_files: int,
+    ) -> Iterator[tuple[Path, str]]:
+        """Walk scan root, yielding up to ``max_files`` paths with non-empty file content."""
+        scan_dir = self._get_scan_root(repo_path)
+        count = 0
+        for path in scan_dir.rglob("*"):
+            if count >= max_files:
+                break
+            if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
+                continue
+            if path.suffix not in extensions:
+                continue
+            content = self.read_file(path)
+            if not content:
+                continue
+            count += 1
+            yield path, content
+
+    def _collect_dep_names(
+        self, repo_path: Path, *, include_requirements_txt: bool = True
+    ) -> set[str]:
+        """Dependency names from common manifests (npm, Python, JVM, .NET, Ruby)."""
+        deps: set[str] = set()
+
+        pkg_json = repo_path / "package.json"
+        if pkg_json.exists():
+            data = self.read_json(pkg_json)
+            if data:
+                for section in ("dependencies", "devDependencies"):
+                    deps.update(data.get(section, {}).keys())
+
+        if include_requirements_txt:
+            for req_file in self.find_files(repo_path, "requirements*.txt"):
+                content = self.read_file(req_file)
+                if content:
+                    for line in content.splitlines():
+                        line = line.strip()
+                        if line and not line.startswith(("#", "-")):
+                            name = re.split(r"[><=!~\[]", line)[0].strip()
+                            if name:
+                                deps.add(name)
+
+        pom = repo_path / "pom.xml"
+        if pom.exists():
+            content = self.read_file(pom)
+            if content:
+                for m in re.finditer(r"<artifactId>([^<]+)</artifactId>", content):
+                    deps.add(m.group(1))
+
+        for csproj in self.find_files(repo_path, "*.csproj"):
+            content = self.read_file(csproj)
+            if content:
+                for m in re.finditer(r'Include="([^"]+)"', content):
+                    deps.add(m.group(1))
+
+        gemfile = repo_path / "Gemfile"
+        if gemfile.exists():
+            content = self.read_file(gemfile)
+            if content:
+                for m in re.finditer(r"gem\s+['\"]([^'\"]+)['\"]", content):
+                    deps.add(m.group(1))
+
+        return deps
+
     def collect_dependency_names(
         self,
         repo_path: Path,
@@ -130,32 +211,14 @@ class BaseAnalyzer(ABC):
         include_requirements_txt: bool = True,
         pyproject_substrings: frozenset[str] | None = None,
     ) -> set[str]:
-        """Union of dependency names from package.json (+ optional requirements, pyproject hints).
+        """Union of manifest deps plus optional ``pyproject.toml`` substring hints.
 
         ``pyproject_substrings``: if a substring appears anywhere in ``pyproject.toml``,
         that substring is added to the set (offline heuristic for unpinned tools).
         """
-        deps: set[str] = set()
-        pkg = self.read_json(repo_path / "package.json")
-        if pkg:
-            deps.update(pkg.get("dependencies", {}).keys())
-            deps.update(pkg.get("devDependencies", {}).keys())
-        if include_requirements_txt:
-            req = repo_path / "requirements.txt"
-            if req.exists():
-                content = self.read_file(req)
-                if content:
-                    for line in content.splitlines():
-                        line = line.strip()
-                        if line and not line.startswith("#"):
-                            name = (
-                                line.split(">=")[0]
-                                .split("==")[0]
-                                .split("[")[0]
-                                .split("<")[0]
-                                .strip()
-                            )
-                            deps.add(name)
+        deps = self._collect_dep_names(
+            repo_path, include_requirements_txt=include_requirements_txt
+        )
         if pyproject_substrings:
             pyproject = repo_path / "pyproject.toml"
             if pyproject.exists():

@@ -18,6 +18,17 @@ from product_builders.profiles.base import DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
 
+
+def build_zone_map(profile: ProductProfile, zone_names: list[str]) -> dict[str, list[str]]:
+    """Map contributor zone names to path globs using the profile's :class:`ScopeConfig`."""
+    result: dict[str, list[str]] = {}
+    for name in zone_names:
+        zone = profile.scopes.get_zone(name)
+        if zone:
+            result[name] = zone.paths
+    return result
+
+
 # Zone auto-detection: directory patterns → zone name
 ZONE_DETECTORS: list[tuple[str, list[str]]] = [
     ("frontend_ui", [
@@ -103,19 +114,26 @@ def generate_default_scopes(zones: list[Zone]) -> list[ContributorScope]:
 
 
 def generate_scope_config(profile: ProductProfile, repo_path: Path) -> ScopeConfig:
-    """Generate a complete ScopeConfig from analysis results and directory structure."""
-    zones = auto_detect_zones(repo_path)
+    """Build a :class:`ScopeConfig` from ``repo_path`` layout (and profile for future use).
 
-    # Add .env* and docker* to configuration and infrastructure if not already present
-    config_zone = next((z for z in zones if z.name == "configuration"), None)
-    if config_zone:
-        config_zone.paths.extend([".env*", "config/**"])
-    else:
-        zones.append(Zone(name="configuration", paths=[".env*", "config/**"]))
+    Detects zones, adds standard configuration/infrastructure path globs without
+    mutating cached :class:`Zone` instances from detection.
+    """
+    detected = auto_detect_zones(repo_path)
+    config_extra = [".env*", "config/**"]
+    infra_extra = ["docker*", "Dockerfile", "*.yml", "*.yaml"]
 
-    infra_zone = next((z for z in zones if z.name == "infrastructure"), None)
-    if infra_zone:
-        infra_zone.paths.extend(["docker*", "Dockerfile", "*.yml", "*.yaml"])
+    zones: list[Zone] = []
+    for z in detected:
+        if z.name == "configuration":
+            zones.append(Zone(name=z.name, paths=[*z.paths, *config_extra]))
+        elif z.name == "infrastructure":
+            zones.append(Zone(name=z.name, paths=[*z.paths, *infra_extra]))
+        else:
+            zones.append(Zone(name=z.name, paths=list(z.paths)))
+
+    if not any(z.name == "configuration" for z in zones):
+        zones.append(Zone(name="configuration", paths=config_extra))
 
     contributor_scopes = generate_default_scopes(zones)
 
@@ -123,7 +141,7 @@ def generate_scope_config(profile: ProductProfile, repo_path: Path) -> ScopeConf
 
 
 def save_scopes_yaml(scope_config: ScopeConfig, path: Path) -> None:
-    """Serialize ScopeConfig to scopes.yaml."""
+    """Write ``scope_config`` to ``path`` as YAML (creates parent directories)."""
     data = {
         "zones": {
             zone.name: {"paths": zone.paths}
@@ -138,31 +156,70 @@ def save_scopes_yaml(scope_config: ScopeConfig, path: Path) -> None:
             for scope in scope_config.contributor_scopes
         },
     }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
-    )
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise PermissionError(
+            f"Cannot create directory for scopes.yaml: {path.parent}"
+        ) from e
+    try:
+        path.write_text(
+            yaml.dump(
+                data, default_flow_style=False, sort_keys=False, allow_unicode=True
+            ),
+            encoding="utf-8",
+        )
+    except OSError as e:
+        raise PermissionError(f"Cannot write scopes.yaml: {path}") from e
     logger.info("Wrote scopes.yaml: %s", path)
 
 
 def load_scopes_yaml(path: Path) -> ScopeConfig:
-    """Load ScopeConfig from a scopes.yaml file."""
+    """Parse ``path`` into a :class:`ScopeConfig` (strict structure and role validation)."""
+    if not path.exists():
+        raise FileNotFoundError(f"scopes.yaml not found: {path}")
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if data is None:
+        raise ValueError("Invalid scopes.yaml: empty file")
     if not isinstance(data, dict):
-        raise ValueError(f"Invalid scopes.yaml: expected mapping, got {type(data).__name__}")
+        raise ValueError(
+            f"Invalid scopes.yaml: expected mapping, got {type(data).__name__}"
+        )
 
     zones: list[Zone] = []
     for zone_name, zone_data in data.get("zones", {}).items():
-        zones.append(Zone(name=zone_name, paths=zone_data.get("paths", [])))
+        if not isinstance(zone_data, dict):
+            raise ValueError(
+                f"Invalid scopes.yaml: zone {zone_name!r} must be a mapping"
+            )
+        raw_paths = zone_data.get("paths", [])
+        if isinstance(raw_paths, list):
+            paths = raw_paths
+        elif isinstance(raw_paths, str):
+            paths = [raw_paths]
+        else:
+            paths = []
+        zones.append(Zone(name=zone_name, paths=paths))
 
     scopes: list[ContributorScope] = []
     for role_str, scope_data in data.get("contributor_scopes", {}).items():
-        scopes.append(ContributorScope(
-            role=ContributorRole(role_str),
-            allowed_zones=scope_data.get("allowed_zones", []),
-            read_only_zones=scope_data.get("read_only_zones", []),
-            forbidden_zones=scope_data.get("forbidden_zones", []),
-        ))
+        if not isinstance(scope_data, dict):
+            raise ValueError(
+                f"Invalid scopes.yaml: contributor_scopes[{role_str!r}] must be a mapping"
+            )
+        try:
+            role = ContributorRole(role_str)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid role in scopes.yaml: {role_str!r}"
+            ) from e
+        scopes.append(
+            ContributorScope(
+                role=role,
+                allowed_zones=scope_data.get("allowed_zones", []),
+                read_only_zones=scope_data.get("read_only_zones", []),
+                forbidden_zones=scope_data.get("forbidden_zones", []),
+            )
+        )
 
     return ScopeConfig(zones=zones, contributor_scopes=scopes)

@@ -13,6 +13,7 @@ from typing import Any
 
 from product_builders.generators.base import BaseGenerator
 from product_builders.generators.registry import register
+from product_builders.generators.scopes import build_zone_map
 from product_builders.models.profile import ProductProfile
 from product_builders.models.scopes import ContributorRole
 from product_builders.profiles.base import DEFAULT_PROFILES
@@ -76,18 +77,6 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
     return checks.get(template_name, True)
 
 
-def _build_zone_map(
-    profile: ProductProfile, zone_names: list[str]
-) -> dict[str, list[str]]:
-    """Build a zone_name → paths mapping for the given zone names."""
-    result: dict[str, list[str]] = {}
-    for name in zone_names:
-        zone = profile.scopes.get_zone(name)
-        if zone:
-            result[name] = zone.paths
-    return result
-
-
 class CursorRulesGenerator(BaseGenerator):
     def __init__(self) -> None:
         super().__init__()
@@ -146,9 +135,9 @@ class CursorRulesGenerator(BaseGenerator):
         forbidden_zones: dict[str, list[str]] = {}
 
         if scope:
-            writable_zones = _build_zone_map(profile, scope.allowed_zones)
-            readonly_zones = _build_zone_map(profile, scope.read_only_zones)
-            forbidden_zones = _build_zone_map(profile, scope.forbidden_zones)
+            writable_zones = build_zone_map(profile, scope.allowed_zones)
+            readonly_zones = build_zone_map(profile, scope.read_only_zones)
+            forbidden_zones = build_zone_map(profile, scope.forbidden_zones)
 
         context = {
             "profile": profile,

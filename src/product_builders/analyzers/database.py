@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from product_builders.analyzers.base import BaseAnalyzer
+from product_builders.analyzers.base import SKIP_DIRS, BaseAnalyzer
 from product_builders.analyzers.registry import register
 from product_builders.models.analysis import AnalysisStatus, DatabaseResult
 
@@ -127,14 +127,21 @@ class DatabaseAnalyzer(BaseAnalyzer):
         db_type = self._detect_db_type(dep_names)
         schema_naming = self._detect_schema_naming(repo_path, orm)
         has_seeds, seed_dir = self._detect_seeds(repo_path)
+        relationship_patterns = self._detect_relationship_patterns(repo_path, orm)
 
         # Resolve actual migration directory
         actual_migration_dir = None
         if migration_dir:
             if "*" in migration_dir:
-                candidates = list(repo_path.glob(migration_dir))
+                candidates = [p for p in repo_path.glob(migration_dir) if p.is_dir()]
                 if candidates:
-                    actual_migration_dir = str(candidates[0].relative_to(repo_path))
+                    # Prefer the app nearest repo root (stable choice when many */migrations exist)
+                    def _migration_sort_key(p: Path) -> tuple[int, str]:
+                        rel = p.relative_to(repo_path)
+                        return (len(rel.parts), rel.as_posix().lower())
+
+                    best = min(candidates, key=_migration_sort_key)
+                    actual_migration_dir = str(best.relative_to(repo_path))
             elif (repo_path / migration_dir).is_dir():
                 actual_migration_dir = migration_dir
 
@@ -146,74 +153,40 @@ class DatabaseAnalyzer(BaseAnalyzer):
             migration_tool=migration_tool,
             migration_directory=actual_migration_dir,
             schema_naming_convention=schema_naming,
+            relationship_patterns=relationship_patterns,
             has_seeds=has_seeds,
             seed_directory=seed_dir,
         )
-
-    def _collect_dep_names(self, repo_path: Path) -> set[str]:
-        deps: set[str] = set()
-
-        pkg_json = repo_path / "package.json"
-        if pkg_json.exists():
-            data = self.read_json(pkg_json)
-            if data:
-                for section in ["dependencies", "devDependencies"]:
-                    deps.update(data.get(section, {}).keys())
-
-        for req_file in self.find_files(repo_path, "requirements*.txt"):
-            content = self.read_file(req_file)
-            if content:
-                for line in content.splitlines():
-                    line = line.strip()
-                    if line and not line.startswith(("#", "-")):
-                        name = re.split(r"[><=!~\[]", line)[0].strip()
-                        if name:
-                            deps.add(name)
-
-        pom = repo_path / "pom.xml"
-        if pom.exists():
-            content = self.read_file(pom)
-            if content:
-                for m in re.finditer(r"<artifactId>([^<]+)</artifactId>", content):
-                    deps.add(m.group(1))
-
-        for csproj in self.find_files(repo_path, "*.csproj"):
-            content = self.read_file(csproj)
-            if content:
-                for m in re.finditer(r'Include="([^"]+)"', content):
-                    deps.add(m.group(1))
-
-        gemfile = repo_path / "Gemfile"
-        if gemfile.exists():
-            content = self.read_file(gemfile)
-            if content:
-                for m in re.finditer(r"gem\s+['\"]([^'\"]+)['\"]", content):
-                    deps.add(m.group(1))
-
-        return deps
 
     def _detect_orm(
         self, repo_path: Path, dep_names: set[str]
     ) -> tuple[str | None, str | None, str | None, str | None]:
         for key, info in ORM_INDICATORS.items():
-            dep_list = info.get("deps", [])
-            assert isinstance(dep_list, list)
+            dep_list_raw = info.get("deps", [])
+            if not isinstance(dep_list_raw, list):
+                continue
+            dep_list = dep_list_raw
+
+            files_raw = info.get("files", [])
+            files = files_raw if isinstance(files_raw, list) else []
 
             # Check config files first
-            files = info.get("files", [])
-            assert isinstance(files, list)
             for f in files:
+                if not isinstance(f, str):
+                    continue
                 if (repo_path / f).exists():
-                    orm_name = info["orm"]
-                    assert isinstance(orm_name, str)
+                    orm_name = info.get("orm")
+                    if not isinstance(orm_name, str):
+                        continue
                     mt = info.get("migration_tool")
                     md = info.get("migration_dir")
                     return orm_name, None, mt if isinstance(mt, str) else None, md if isinstance(md, str) else None
 
             # Check dependencies
             if any(dep in dep_names for dep in dep_list):
-                orm_name = info["orm"]
-                assert isinstance(orm_name, str)
+                orm_name = info.get("orm")
+                if not isinstance(orm_name, str):
+                    continue
                 mt = info.get("migration_tool")
                 md = info.get("migration_dir")
                 return orm_name, None, mt if isinstance(mt, str) else None, md if isinstance(md, str) else None
@@ -225,6 +198,36 @@ class DatabaseAnalyzer(BaseAnalyzer):
             if any(ind in dep_names for ind in indicators):
                 return db_type
         return None
+
+    def _detect_relationship_patterns(self, repo_path: Path, orm: str | None) -> list[str]:
+        """Lightweight markers for how models declare relations (templates / rules)."""
+        found: list[str] = []
+        prisma_schema = repo_path / "prisma" / "schema.prisma"
+        if prisma_schema.exists():
+            text = self.read_file(prisma_schema) or ""
+            if re.search(r"@relation\s*\(", text):
+                found.append("prisma-relations")
+        if orm == "Django ORM":
+            for p in repo_path.rglob("models.py"):
+                if any(s in p.parts for s in SKIP_DIRS):
+                    continue
+                t = self.read_file(p)
+                if t and (
+                    "ForeignKey" in t
+                    or "ManyToManyField" in t
+                    or "OneToOneField" in t
+                ):
+                    found.append("django-orm-relations")
+                    break
+        scan_root = repo_path / "src" if (repo_path / "src").is_dir() else repo_path
+        for path in scan_root.rglob("*.py"):
+            if any(s in path.parts for s in SKIP_DIRS):
+                continue
+            t = self.read_file(path)
+            if t and "relationship(" in t:
+                found.append("sqlalchemy-relationship")
+                break
+        return list(dict.fromkeys(found))
 
     def _detect_schema_naming(self, repo_path: Path, orm: str | None) -> str | None:
         if orm == "Prisma":

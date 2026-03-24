@@ -51,5 +51,5 @@ for _mod_name in _ANALYZER_MODULES:
         importlib.import_module(f"product_builders.analyzers.{_mod_name}")
     except ModuleNotFoundError:
         pass
-    except Exception:
-        logger.warning("Failed to load analyzer module '%s'", _mod_name, exc_info=True)
+    except (ImportError, SyntaxError, AttributeError) as e:
+        logger.warning("Failed to load analyzer module '%s': %s", _mod_name, e, exc_info=True)

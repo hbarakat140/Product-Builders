@@ -10,7 +10,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from product_builders.analyzers.base import SKIP_DIRS, BaseAnalyzer
+from product_builders.analyzers.base import (
+    MAX_SOURCE_FILES_AUTH_PERMISSION,
+    MAX_SOURCE_FILES_AUTH_PROTECTED,
+    SKIP_DIRS,
+    BaseAnalyzer,
+)
 from product_builders.analyzers.registry import register
 from product_builders.models.analysis import AnalysisStatus, AuthResult
 
@@ -72,8 +77,9 @@ class AuthAnalyzer(BaseAnalyzer):
         dep_names = self._collect_dep_names(repo_path)
         strategy = self._detect_strategy(dep_names)
         middleware = self._detect_middleware(repo_path, dep_names)
-        permission_model = self._detect_permission_model(repo_path, dep_names)
-        protected_patterns = self._detect_protected_routes(repo_path)
+        permission_model, protected_patterns = self._detect_permission_and_protected(
+            repo_path, dep_names
+        )
         auth_dirs = self._detect_auth_directories(repo_path)
 
         return AuthResult(
@@ -84,27 +90,6 @@ class AuthAnalyzer(BaseAnalyzer):
             protected_route_patterns=protected_patterns,
             auth_directories=auth_dirs,
         )
-
-    def _collect_dep_names(self, repo_path: Path) -> set[str]:
-        deps: set[str] = set()
-        pkg_json = repo_path / "package.json"
-        if pkg_json.exists():
-            data = self.read_json(pkg_json)
-            if data:
-                for section in ["dependencies", "devDependencies"]:
-                    deps.update(data.get(section, {}).keys())
-
-        for req_file in self.find_files(repo_path, "requirements*.txt"):
-            content = self.read_file(req_file)
-            if content:
-                for line in content.splitlines():
-                    line = line.strip()
-                    if line and not line.startswith(("#", "-")):
-                        name = re.split(r"[><=!~\[]", line)[0].strip()
-                        if name:
-                            deps.add(name)
-
-        return deps
 
     def _detect_strategy(self, dep_names: set[str]) -> str | None:
         for strategy, indicators in AUTH_STRATEGY_INDICATORS.items():
@@ -145,77 +130,75 @@ class AuthAnalyzer(BaseAnalyzer):
 
         return middleware
 
-    def _detect_permission_model(self, repo_path: Path, dep_names: set[str]) -> str | None:
-        # Check dependencies first
+    def _detect_permission_and_protected(
+        self, repo_path: Path, dep_names: set[str]
+    ) -> tuple[str | None, list[str]]:
+        """Single tree pass for permission heuristics and protected-route patterns."""
+        permission_model: str | None = None
         if "@casl/ability" in dep_names or "casl" in dep_names:
-            return "abac"
+            permission_model = "abac"
 
-        # Scan source files for patterns
-        src_dir = repo_path / "src"
-        scan_dir = src_dir if src_dir.is_dir() else repo_path
-        count = 0
-
-        for path in scan_dir.rglob("*"):
-            if count >= 30:
-                break
-            if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
-                continue
-            if path.suffix not in (".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs", ".rb"):
-                continue
-
-            content = self.read_file(path)
-            if not content:
-                continue
-            count += 1
-
-            for model, indicators in PERMISSION_MODEL_INDICATORS.items():
-                for ind in indicators:
-                    if ind in content:
-                        return model
-
-        return None
-
-    def _detect_protected_routes(self, repo_path: Path) -> list[str]:
         patterns: list[str] = []
+        perm_ext = frozenset({".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".cs", ".rb"})
+        prot_ext = frozenset({".ts", ".tsx", ".js", ".jsx", ".py", ".java"})
+        guard_patterns = [
+            r"@UseGuards\((\w+)\)",
+            r"@login_required",
+            r"@permission_required",
+            r"@requires_auth",
+            r"isAuthenticated",
+            r"ensureAuthenticated",
+            r"protect\(",
+            r"requireAuth",
+            r"withAuth",
+        ]
 
-        # Look for common guard/decorator patterns
-        src_dir = repo_path / "src"
-        scan_dir = src_dir if src_dir.is_dir() else repo_path
-        count = 0
+        scan_dir = self._get_scan_root(repo_path)
+        perm_files = 0
+        prot_files = 0
 
         for path in scan_dir.rglob("*"):
-            if count >= 20:
+            permission_done = permission_model is not None or perm_files >= MAX_SOURCE_FILES_AUTH_PERMISSION
+            protected_done = prot_files >= MAX_SOURCE_FILES_AUTH_PROTECTED
+            if permission_done and protected_done:
                 break
             if not path.is_file() or any(s in path.parts for s in SKIP_DIRS):
                 continue
-            if path.suffix not in (".ts", ".tsx", ".js", ".jsx", ".py", ".java"):
+
+            perm_eligible = path.suffix in perm_ext
+            prot_eligible = path.suffix in prot_ext
+            if not perm_eligible and not prot_eligible:
                 continue
 
             content = self.read_file(path)
             if not content:
                 continue
-            count += 1
 
-            guard_patterns = [
-                r"@UseGuards\((\w+)\)",
-                r"@login_required",
-                r"@permission_required",
-                r"@requires_auth",
-                r"isAuthenticated",
-                r"ensureAuthenticated",
-                r"protect\(",
-                r"requireAuth",
-                r"withAuth",
-            ]
-            for pat in guard_patterns:
-                matches = re.findall(pat, content)
-                if matches:
-                    for m in matches:
-                        p = m if isinstance(m, str) and m else pat.strip("\\()")
-                        if p not in patterns:
-                            patterns.append(p)
+            if (
+                permission_model is None
+                and perm_eligible
+                and perm_files < MAX_SOURCE_FILES_AUTH_PERMISSION
+            ):
+                perm_files += 1
+                for model, indicators in PERMISSION_MODEL_INDICATORS.items():
+                    for ind in indicators:
+                        if ind in content:
+                            permission_model = model
+                            break
+                    if permission_model:
+                        break
 
-        return patterns[:10]
+            if prot_eligible and prot_files < MAX_SOURCE_FILES_AUTH_PROTECTED:
+                prot_files += 1
+                for pat in guard_patterns:
+                    matches = re.findall(pat, content)
+                    if matches:
+                        for m in matches:
+                            p = m if m else pat.strip("\\()")
+                            if p not in patterns:
+                                patterns.append(p)
+
+        return permission_model, patterns[:10]
 
     def _detect_auth_directories(self, repo_path: Path) -> list[str]:
         dirs: list[str] = []

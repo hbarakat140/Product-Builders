@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ContributorRole(str, Enum):
@@ -26,7 +26,8 @@ class Zone(BaseModel):
 
     name: str = Field(min_length=1)
     paths: list[str] = Field(
-        description="Glob patterns relative to project root (e.g. 'src/components/**')"
+        default_factory=list,
+        description="Glob patterns relative to project root (e.g. 'src/components/**')",
     )
 
 
@@ -53,6 +54,15 @@ class ScopeConfig(BaseModel):
 
     zones: list[Zone] = Field(default_factory=list)
     contributor_scopes: list[ContributorScope] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _zones_have_unique_names(self) -> ScopeConfig:
+        seen: set[str] = set()
+        for z in self.zones:
+            if z.name in seen:
+                raise ValueError(f"Duplicate zone name in scopes: {z.name!r}")
+            seen.add(z.name)
+        return self
 
     def get_zone(self, name: str) -> Zone | None:
         return next((z for z in self.zones if z.name == name), None)

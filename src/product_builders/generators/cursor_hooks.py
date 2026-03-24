@@ -67,10 +67,11 @@ class CursorHooksGenerator(BaseGenerator):
             return []
 
         hooks: list[dict[str, object]] = []
+        zone_by_name = {z.name: z for z in profile.scopes.zones}
 
         # preToolUse hooks for read-only zones
         for zone_name in scope.read_only_zones:
-            zone = profile.scopes.get_zone(zone_name)
+            zone = zone_by_name.get(zone_name)
             if not zone:
                 continue
             hooks.append({
@@ -88,7 +89,7 @@ class CursorHooksGenerator(BaseGenerator):
 
         # preToolUse hooks for forbidden zones
         for zone_name in scope.forbidden_zones:
-            zone = profile.scopes.get_zone(zone_name)
+            zone = zone_by_name.get(zone_name)
             if not zone:
                 continue
             hooks.append({

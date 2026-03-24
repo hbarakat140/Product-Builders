@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import click
+from pydantic import ValidationError
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
@@ -464,6 +465,7 @@ def list_products(ctx: click.Context) -> None:
     table.add_column("Primary Language")
     table.add_column("Framework")
 
+    log = logging.getLogger(__name__)
     for name in products:
         try:
             profile = ProductProfile.load(config.get_analysis_path(name))
@@ -473,7 +475,8 @@ def list_products(ctx: click.Context) -> None:
                 profile.tech_stack.primary_language or "—",
                 ", ".join(f.name for f in profile.tech_stack.frameworks[:3]) or "—",
             )
-        except Exception:
+        except (FileNotFoundError, OSError, json.JSONDecodeError, ValidationError) as e:
+            log.debug("list: could not load profile for %r: %s", name, e, exc_info=True)
             table.add_row(name, "?", "?", "?")
 
     console.print(table)
@@ -507,13 +510,23 @@ def bulk_analyze(ctx: click.Context, manifest: str | None, monorepo: str | None)
             raise click.ClickException("Invalid manifest: 'products' must be a list.")
 
         console.print(f"[bold blue]Bulk analyzing {len(products)} products from manifest[/bold blue]\n")
+        log = logging.getLogger(__name__)
         for product in products:
             if not isinstance(product, dict):
+                log.warning(
+                    "bulk-analyze: skipping manifest entry (expected mapping, got %s)",
+                    type(product).__name__,
+                )
                 continue
             product_name = product.get("name")
             product_path = product.get("path")
             if product_name and product_path:
                 ctx.invoke(analyze, repo_path=product_path, name=product_name, heuristic_only=False, sub_project=None)
+            else:
+                log.warning(
+                    "bulk-analyze: skipping manifest entry (missing name or path): %r",
+                    product,
+                )
 
     if monorepo:
         monorepo_path = Path(monorepo)
@@ -678,10 +691,22 @@ def feedback(ctx: click.Context, name: str, rule: str, issue: str) -> None:
         raise click.BadParameter(str(e), param_hint="'--name'") from e
 
     existing: list[dict] = []
+    log = logging.getLogger(__name__)
     if feedback_path.exists():
-        data = yaml.safe_load(feedback_path.read_text(encoding="utf-8"))
+        try:
+            raw = feedback_path.read_text(encoding="utf-8")
+            data = yaml.safe_load(raw)
+        except (yaml.YAMLError, OSError, UnicodeDecodeError) as e:
+            log.warning(
+                "feedback: could not read existing %s, starting fresh: %s",
+                feedback_path,
+                e,
+            )
+            data = None
         if isinstance(data, list):
-            existing = data
+            existing = [x for x in data if isinstance(x, dict)]
+        elif isinstance(data, dict):
+            existing = [data]
 
     existing.append({
         "rule": rule,
