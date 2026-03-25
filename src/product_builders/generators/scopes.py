@@ -78,16 +78,38 @@ ZONE_DETECTORS: list[tuple[str, list[str]]] = [
 
 
 def auto_detect_zones(repo_path: Path) -> list[Zone]:
-    """Auto-detect zones from project directory structure."""
+    """Detect zones by scanning repo for known directory patterns.
+
+    Checks both direct patterns (e.g., ``tests/``) and ``src/``-prefixed
+    variants (e.g., ``src/app/api/``).  Also uses glob to find nested
+    matches like ``src/lib/__tests__/``.
+    """
     zones: list[Zone] = []
+    seen_zone_names: set[str] = set()
 
     for zone_name, dir_patterns in ZONE_DETECTORS:
         found_paths: list[str] = []
         for pattern in dir_patterns:
-            if (repo_path / pattern).is_dir():
+            # Direct check: repo_root / pattern
+            candidate = repo_path / pattern
+            if candidate.is_dir():
                 found_paths.append(f"{pattern}/**")
+                continue
+            # Prefixed check: repo_root / src / pattern
+            src_candidate = repo_path / "src" / pattern
+            if src_candidate.is_dir():
+                found_paths.append(f"src/{pattern}/**")
+                continue
+            # Glob fallback: find nested occurrences (e.g., */__tests__)
+            leaf = Path(pattern).name
+            for match in repo_path.glob(f"**/{leaf}"):
+                if match.is_dir() and ".git" not in match.parts:
+                    rel = match.relative_to(repo_path)
+                    found_paths.append(f"{rel}/**")
+                    break  # one match per pattern is enough
 
-        if found_paths:
+        if found_paths and zone_name not in seen_zone_names:
+            seen_zone_names.add(zone_name)
             zones.append(Zone(name=zone_name, paths=found_paths))
 
     return zones
