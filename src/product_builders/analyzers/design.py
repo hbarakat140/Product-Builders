@@ -28,6 +28,12 @@ _COMPONENT_LIBS: dict[str, str] = {
     "bootstrap": "bootstrap",
     "react-bootstrap": "react-bootstrap",
     "@cegid/cds-react": "cds",
+    "shadcn": "shadcn",
+    "@shadcn/ui": "shadcn",
+    "@base-ui/react": "base-ui",
+    "@nextui-org/react": "nextui",
+    "@park-ui/react": "park-ui",
+    "daisyui": "daisyui",
 }
 
 _CSS_METHODOLOGIES: dict[str, str] = {

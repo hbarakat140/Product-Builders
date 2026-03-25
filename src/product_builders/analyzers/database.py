@@ -103,12 +103,18 @@ ORM_INDICATORS: dict[str, dict[str, str | list[str]]] = {
 }
 
 DB_TYPE_INDICATORS: dict[str, list[str]] = {
-    "postgresql": ["pg", "postgres", "postgresql", "psycopg2", "psycopg", "Npgsql", "asyncpg"],
-    "mysql": ["mysql", "mysql2", "mysqlclient", "PyMySQL", "MySql.Data"],
+    "postgresql": [
+        "pg", "postgres", "postgresql", "psycopg2", "psycopg", "Npgsql", "asyncpg",
+        "@supabase/supabase-js", "@supabase/ssr", "supabase",
+        "@neon/serverless", "@neondatabase/serverless",
+    ],
+    "mysql": ["mysql", "mysql2", "mysqlclient", "PyMySQL", "MySql.Data", "@planetscale/database"],
     "sqlite": ["sqlite3", "better-sqlite3", "sqlite", "Microsoft.Data.Sqlite"],
     "mongodb": ["mongoose", "mongodb", "pymongo", "Motor", "MongoDB.Driver"],
     "redis": ["redis", "ioredis", "aioredis"],
     "mssql": ["mssql", "tedious", "pyodbc", "Microsoft.Data.SqlClient"],
+    "firebase": ["firebase", "firebase-admin", "@firebase/firestore"],
+    "dynamodb": ["@aws-sdk/client-dynamodb", "boto3"],
 }
 
 

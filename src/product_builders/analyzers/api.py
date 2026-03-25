@@ -74,6 +74,11 @@ class APIAnalyzer(BaseAnalyzer):
         controllers_dir = repo_path / "src" / "controllers"
         if api_dir.is_dir() or routes_dir.is_dir() or controllers_dir.is_dir():
             return "rest"
+        # Next.js App Router API routes
+        if "next" in deps:
+            app_api_dirs = list(repo_path.glob("**/app/api"))
+            if app_api_dirs:
+                return "rest"
         return None
 
     def _detect_route_structure(self, repo_path: Path) -> str | None:
