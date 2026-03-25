@@ -8,9 +8,9 @@ from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from product_builders.config import PROFILES_DIR
+from product_builders.config import PROFILES_DIR, validate_product_name
 from product_builders.metrics import read_recent_events
 from product_builders.webapp.job_manager import JobManager, JobStatus, load_recent_paths
 
@@ -27,40 +27,46 @@ mgr = JobManager()
 # ---------------------------------------------------------------------------
 
 
-class AnalyzeRequest(BaseModel):
-    repo_path: str
+class _NamedRequest(BaseModel):
+    """Base for requests that include a product name."""
+
     name: str
+
+    @field_validator("name")
+    @classmethod
+    def _check_name(cls, v: str) -> str:
+        validate_product_name(v)
+        return v
+
+
+class AnalyzeRequest(_NamedRequest):
+    repo_path: str
     heuristic_only: bool = False
     sub_project: str | None = None
 
 
-class GenerateRequest(BaseModel):
-    name: str
+class GenerateRequest(_NamedRequest):
     profile: str | None = None
     validate_output: bool = Field(default=False, alias="validate")
 
     model_config = {"populate_by_name": True}
 
 
-class ExportRequest(BaseModel):
-    name: str
+class ExportRequest(_NamedRequest):
     target: str
     profile: str | None = None
 
 
-class SetupRequest(BaseModel):
-    name: str
+class SetupRequest(_NamedRequest):
     profile: str
 
 
-class CheckDriftRequest(BaseModel):
-    name: str
+class CheckDriftRequest(_NamedRequest):
     repo_path: str
     full: bool = False
 
 
-class FeedbackRequest(BaseModel):
-    name: str
+class FeedbackRequest(_NamedRequest):
     rule: str
     issue: str
 

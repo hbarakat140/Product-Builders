@@ -99,22 +99,38 @@ class JobManager:
     Only one job may be RUNNING at a time.
     """
 
+    _MAX_JOBS = 50
+
     def __init__(self) -> None:
         self._jobs: dict[str, Job] = {}
+        self._running_job_id: str | None = None
 
     # -- public API ---------------------------------------------------------
 
     def create_job(self, command: str, args: dict[str, Any]) -> Job:
         """Create a new job.  Raises ``RuntimeError`` if a job is already running."""
-        for existing in self._jobs.values():
-            if existing.status == JobStatus.RUNNING:
+        if self._running_job_id is not None:
+            running = self._jobs.get(self._running_job_id)
+            if running and running.status == JobStatus.RUNNING:
                 raise RuntimeError(
-                    f"A job is already running (id={existing.id}, command={existing.command})"
+                    f"A job is already running (id={running.id}, command={running.command})"
                 )
+            self._running_job_id = None
+
+        # Evict oldest finished jobs when over capacity
+        if len(self._jobs) >= self._MAX_JOBS:
+            finished = [
+                j for j in self._jobs.values()
+                if j.status in (JobStatus.COMPLETED, JobStatus.FAILED)
+            ]
+            finished.sort(key=lambda j: j.started_at)
+            for j in finished[: len(self._jobs) - self._MAX_JOBS + 1]:
+                del self._jobs[j.id]
 
         job_id = uuid.uuid4().hex[:12]
         job = Job(id=job_id, command=command, args=dict(args))
         self._jobs[job_id] = job
+        self._running_job_id = job_id
         return job
 
     def get_job(self, job_id: str) -> Job | None:

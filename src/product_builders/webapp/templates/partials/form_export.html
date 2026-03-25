@@ -7,14 +7,7 @@
     <input type="text" id="target" name="target" required placeholder="/path/to/target/repo">
 
     <label for="profile">Role</label>
-    <select id="profile" name="profile">
-      <option value="">All roles</option>
-      <option value="engineer">Engineer</option>
-      <option value="pm">PM</option>
-      <option value="designer">Designer</option>
-      <option value="qa">QA</option>
-      <option value="technical-pm">Technical PM</option>
-    </select>
+    {% include "partials/role_select.html" %}
   </div>
   <button type="submit" class="btn btn-primary" id="submit-btn">Run Export</button>
 </form>

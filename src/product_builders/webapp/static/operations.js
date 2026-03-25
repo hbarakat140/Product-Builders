@@ -5,6 +5,17 @@ function activateTab(btn) {
   btn.classList.add('active');
 }
 
+function resetSubmitBtn(submitBtn) {
+  if (!submitBtn) return;
+  submitBtn.disabled = false;
+  submitBtn.textContent = submitBtn.dataset.originalText || 'Run';
+}
+
+function setTerminalStatus(el, text, ok) {
+  el.textContent = text;
+  el.className = ok ? 'badge ok' : 'badge warn';
+}
+
 function submitCommand(event, command) {
   event.preventDefault();
   const form = event.target;
@@ -31,8 +42,7 @@ function submitCommand(event, command) {
   const status = document.getElementById('terminal-status');
   terminal.style.display = 'block';
   output.textContent = '';
-  status.textContent = 'running';
-  status.className = 'badge warn';
+  setTerminalStatus(status, 'running', false);
 
   fetch(`/api/${command}`, {
     method: 'POST',
@@ -53,12 +63,8 @@ function submitCommand(event, command) {
     })
     .catch(err => {
       output.textContent = `Error: ${err.message}\n`;
-      status.textContent = 'error';
-      status.className = 'badge warn';
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = submitBtn.dataset.originalText || 'Run';
-      }
+      setTerminalStatus(status, 'error', false);
+      resetSubmitBtn(submitBtn);
     });
 }
 
@@ -81,25 +87,16 @@ function connectWebSocket(jobId, submitBtn) {
       output.scrollTop = output.scrollHeight;
     } else if (msg.type === 'done') {
       const isOk = msg.status === 'completed';
-      status.textContent = isOk ? `completed (${msg.duration_s}s)` : 'failed';
-      status.className = isOk ? 'badge ok' : 'badge warn';
-
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = submitBtn.dataset.originalText || 'Run';
-      }
+      setTerminalStatus(status, isOk ? `completed (${msg.duration_s}s)` : 'failed', isOk);
+      resetSubmitBtn(submitBtn);
     } else if (msg.type === 'error') {
       output.textContent += `Error: ${msg.message}\n`;
     }
   };
 
   ws.onerror = function () {
-    status.textContent = 'connection error';
-    status.className = 'badge warn';
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = submitBtn.dataset.originalText || 'Run';
-    }
+    setTerminalStatus(status, 'connection error', false);
+    resetSubmitBtn(submitBtn);
   };
 }
 
