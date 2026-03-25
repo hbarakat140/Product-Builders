@@ -160,7 +160,7 @@ async def ws_execute(websocket: WebSocket, job_id: str = "") -> None:
             current_lines = job.output_lines
             if sent < len(current_lines):
                 for line_entry in current_lines[sent:]:
-                    await websocket.send_json({"type": "output", **line_entry})
+                    await websocket.send_json({"type": "log", **line_entry})
                 sent = len(current_lines)
 
             # Check if the job is done
@@ -168,7 +168,7 @@ async def ws_execute(websocket: WebSocket, job_id: str = "") -> None:
                 # Flush any remaining lines
                 if sent < len(job.output_lines):
                     for line_entry in job.output_lines[sent:]:
-                        await websocket.send_json({"type": "output", **line_entry})
+                        await websocket.send_json({"type": "log", **line_entry})
 
                 duration_s = 0.0
                 if job.finished_at and job.started_at:
