@@ -168,8 +168,7 @@ class JobManager:
             ]
             return parts
 
-        # Fallback: pass command and args as-is
-        return base + [command]
+        raise ValueError(f"Unknown command: {command}")
 
     async def run_job(self, job: Job) -> None:
         """Run the job as a subprocess, streaming stdout/stderr into *job.output_lines*."""
