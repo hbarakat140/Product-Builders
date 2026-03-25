@@ -1,0 +1,22 @@
+<form onsubmit="submitCommand(event, 'generate')">
+  <div class="form-grid">
+    <label for="name">Product name <span class="req">*</span></label>
+    <input type="text" id="name" name="name" required placeholder="my-product">
+
+    <label for="profile">Role</label>
+    <select id="profile" name="profile">
+      <option value="">All roles</option>
+      <option value="engineer">Engineer</option>
+      <option value="pm">PM</option>
+      <option value="designer">Designer</option>
+      <option value="qa">QA</option>
+      <option value="technical-pm">Technical PM</option>
+    </select>
+
+    <label for="validate">Options</label>
+    <div>
+      <label class="checkbox"><input type="checkbox" name="validate"> Run validation</label>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary" id="submit-btn">Run Generate</button>
+</form>

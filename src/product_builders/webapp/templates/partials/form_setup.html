@@ -1,0 +1,17 @@
+<form onsubmit="submitCommand(event, 'setup')">
+  <div class="form-grid">
+    <label for="name">Product name <span class="req">*</span></label>
+    <input type="text" id="name" name="name" required placeholder="my-product">
+
+    <label for="profile">Role <span class="req">*</span></label>
+    <select id="profile" name="profile" required>
+      <option value="">Select role...</option>
+      <option value="engineer">Engineer</option>
+      <option value="pm">PM</option>
+      <option value="designer">Designer</option>
+      <option value="qa">QA</option>
+      <option value="technical-pm">Technical PM</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary" id="submit-btn">Run Setup</button>
+</form>

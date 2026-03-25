@@ -1,0 +1,20 @@
+<form onsubmit="submitCommand(event, 'export')">
+  <div class="form-grid">
+    <label for="name">Product name <span class="req">*</span></label>
+    <input type="text" id="name" name="name" required placeholder="my-product">
+
+    <label for="target">Target repo path <span class="req">*</span></label>
+    <input type="text" id="target" name="target" required placeholder="/path/to/target/repo">
+
+    <label for="profile">Role</label>
+    <select id="profile" name="profile">
+      <option value="">All roles</option>
+      <option value="engineer">Engineer</option>
+      <option value="pm">PM</option>
+      <option value="designer">Designer</option>
+      <option value="qa">QA</option>
+      <option value="technical-pm">Technical PM</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary" id="submit-btn">Run Export</button>
+</form>

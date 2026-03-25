@@ -171,6 +171,38 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}
 
+    # --- Operations dashboard ---
+
+    @app.get("/operations", response_class=HTMLResponse)
+    def operations(request: Request, command: str | None = None, name: str | None = None) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "operations.html",
+            _template_ctx(
+                request,
+                title="Operations — Product Builders",
+                preselect_command=command,
+                preselect_name=name,
+            ),
+        )
+
+    # Partial form routes for htmx tab swapping
+    _form_templates = {
+        "analyze": "partials/form_analyze.html",
+        "generate": "partials/form_generate.html",
+        "export": "partials/form_export.html",
+        "setup": "partials/form_setup.html",
+        "check-drift": "partials/form_check_drift.html",
+        "feedback": "partials/form_feedback.html",
+    }
+
+    @app.get("/partials/form/{command}", response_class=HTMLResponse)
+    def form_partial(request: Request, command: str) -> HTMLResponse:
+        template_name = _form_templates.get(command)
+        if not template_name:
+            raise HTTPException(status_code=404, detail="Unknown command")
+        return templates.TemplateResponse(request, template_name, {"request": request})
+
     return app
 
 
