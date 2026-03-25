@@ -9,6 +9,7 @@
 - [What you get](#what-you-get)
 - [Requirements](#requirements)
 - [Installation](#installation)
+- [Quick start by phase](#quick-start-by-phase)
 - [Configuration & directories](#configuration--directories)
 - [Typical workflow](#typical-workflow)
 - [CLI reference](#cli-reference)
@@ -26,7 +27,7 @@
 
 | Output | Purpose |
 |--------|---------|
-| **Heuristic profile** (`analysis.json`) | Structured snapshot of stack, DB, auth, errors, security, tests, CI/CD, and many more dimensions |
+| **Heuristic profile** (`analysis.json`) | Structured snapshot of stack, DB, auth, errors, security, tests, CI/CD, BaaS (Supabase, Firebase, DynamoDB, PlanetScale, Neon), component libraries (shadcn, base-ui, nextui, park-ui, daisyui), and many more dimensions |
 | **Cursor rules** (`.cursor/rules/*.mdc`) | Product-specific guidance for the AI |
 | **Hooks** (`.cursor/hooks.json`) | Layer 2: contextual blocking with messages (e.g. read-only zones) |
 | **Permissions** (`.cursor/cli.json`) | Layer 3: hard deny for paths/commands per role |
@@ -35,6 +36,8 @@
 | **Metrics** (`metrics.jsonl`) | Optional events from validate, drift checks, etc. |
 
 Analysis is **fully offline** (no LLM calls in the core pipeline). A **bootstrap meta-rule** can be generated for deeper, Cursor-assisted analysis when you do not pass `--heuristic-only`.
+
+**Recent improvements:** BaaS-aware database detection (Supabase to postgresql, Firebase to firebase, DynamoDB, PlanetScale to mysql, Neon to postgresql), smart blocked-command filtering (dangerous commands like `prisma:migrate` or `alembic upgrade` are only blocked when that tool is actually in the project's dependencies), `overrides.yaml` support for post-analysis corrections, and improved zone detection with nested directory support.
 
 ---
 
@@ -70,6 +73,110 @@ pip install -e ".[dev]"
 
 ---
 
+## Quick start by phase
+
+Roadmap phases (see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)) map to how you **install**, **analyze**, **generate**, and **operate** the tool. Use either the **interactive wizard** or the **copy-paste blocks** below.
+
+### Interactive wizard
+
+Runs prompts (and can invoke `analyze`, `generate`, `check-drift` for you):
+
+```bash
+product-builders wizard
+```
+
+| Flag | Use |
+|------|-----|
+| **`--phase N`** | Only run phase **1**–**5** (see table below). |
+| **`-y` / `--yes`** | Skip “continue?” prompts between phases (for scripting). |
+| **`--repo`**, **`--name`**, **`--profile`** | Pre-fill paths and product name; with **`-y --phase 2`** both **`--repo`** and **`--name`** are required. |
+| **`--heuristic-only`** | Phase 2: same as **`analyze --heuristic-only`**. |
+| **`--validate` / `--no-validate`** | Phase 3: control validation without a prompt. |
+
+Examples:
+
+```bash
+# Guided tour (all phases, interactive)
+product-builders wizard
+
+# Foundation only: Python check, paths, pip reminders, create profiles dir
+product-builders wizard --phase 1 -y
+
+# Scripted analyze + generate
+product-builders wizard -y --phase 2 --repo /path/to/repo --name my-app
+product-builders wizard -y --phase 3 --name my-app --validate
+
+# Phase 5 with automatic drift check (needs both repo and name)
+product-builders wizard -y --phase 5 --name my-app --repo /path/to/repo
+```
+
+### Phase 1: Foundation
+
+**Goal:** Tooling, Python **3.11+**, profile and standards directories.
+
+```bash
+pip install -e .
+pip install -e ".[webapp]"    # optional: catalog + docs site
+pip install -e ".[dev]"       # optional: tests, ruff, mypy
+product-builders --version
+```
+
+Set **`PB_PROFILES_DIR`** / **`PB_STANDARDS_DIR`** / **`PB_HOME`** if defaults are wrong for your layout (see [Configuration & directories](#configuration--directories)).
+
+### Phase 2: Core analysis
+
+**Goal:** Offline heuristics (tech stack, structure, deps, conventions, **database**, **auth**, **error handling**, **git**). Writes **`analysis.json`** under **`PB_PROFILES_DIR/<name>/`**.
+
+```bash
+product-builders analyze /path/to/repo --name my-product
+# Skip Cursor bootstrap meta-rule:
+product-builders analyze /path/to/repo --name my-product --heuristic-only
+```
+
+### Phase 3: Rules and governance
+
+**Goal:** Cursor **`.mdc`** rules, **hooks**, **cli.json**, **scopes.yaml**, onboarding, review checklist. The `generate` command automatically applies `profiles/<name>/overrides.yaml` if present, so you can correct analysis mistakes without re-scanning.
+
+```bash
+product-builders generate --name my-product
+product-builders generate --name my-product --profile engineer
+product-builders generate --name my-product --validate
+```
+
+Copy artifacts into a repo contributors use:
+
+```bash
+product-builders export --name my-product --target /path/to/repo
+# or from inside that repo:
+product-builders setup --name my-product --profile engineer
+```
+
+### Phase 4: Extended dimensions
+
+**Goal:** Security, testing, CI/CD, design, API, i18n, state, env, performance, etc.
+
+There is **no separate command**: a normal **`analyze`** already fills these dimensions. Re-run analyze when the codebase changes significantly.
+
+```bash
+product-builders analyze /path/to/repo --name my-product
+```
+
+### Phase 5: Lifecycle and quality
+
+**Goal:** Structural validation, drift vs git or full re-scan, metrics, feedback.
+
+```bash
+product-builders generate --name my-product --validate
+product-builders check-drift --name my-product --repo /path/to/repo
+product-builders check-drift --name my-product --repo /path/to/repo --full
+product-builders metrics --name my-product
+product-builders feedback --name my-product --rule database --issue "ORM hint wrong for module X"
+```
+
+Automated bulk analysis via Cursor Background Agent API is **deferred** (see implementation plan).
+
+---
+
 ## Configuration & directories
 
 Paths default to a layout relative to the package / checkout unless you override them.
@@ -87,9 +194,10 @@ Paths default to a layout relative to the package / checkout unless you override
 ## Typical workflow
 
 1. **Analyze** a repository and cache a profile under your profiles directory.
-2. **Generate** rules, hooks, permissions, docs, and checklist into that profile directory (optionally for a **contributor role**).
-3. **Export** (or **setup** in a clone) to copy governance into the **actual product repo** contributors use.
-4. Optionally run **validate** on generate, **check-drift** when the repo moves on, and **feedback** to record rule issues.
+2. *(Optional)* **Override** analysis results by creating `profiles/<name>/overrides.yaml` to correct any detection mistakes.
+3. **Generate** rules, hooks, permissions, docs, and checklist into that profile directory (optionally for a **contributor role**). Overrides are applied automatically if present.
+4. **Export** (or **setup** in a clone) to copy governance into the **actual product repo** contributors use.
+5. Optionally run **validate** on generate, **check-drift** when the repo moves on, and **feedback** to record rule issues.
 
 ```bash
 # 1. Scan repo → profiles/<name>/analysis.json (+ analyzers output)
@@ -136,6 +244,7 @@ Global options: **`--version`**, **`-v` / `--verbose`** (debug logging).
 | **`check-drift`** | Compare cached profile to repo (**git HEAD** and/or **`--full`** heuristic fingerprint). |
 | **`metrics`** | Show recent **`metrics.jsonl`** events for a product. |
 | **`feedback`** | Append an entry to **`feedback.yaml`** for a product (rule accuracy notes). |
+| **`wizard`** | Interactive **quick start by phase** (install path through lifecycle); optional **`-y`**, **`--phase`**, **`--repo`**, **`--name`**. |
 
 Role aliases for **`--profile`** (see **`resolve_role`** in code): **`engineer`**, **`eng`**, **`pm`**, **`product_manager`**, **`designer`**, **`qa`**, **`qa_tester`**, **`tester`**, **`technical-pm`**, **`technical_pm`**, **`tech_pm`**, and more. Run **`product-builders <command> --help`** for flags; invalid roles list valid aliases in the error message.
 
@@ -159,6 +268,7 @@ Under **`PB_PROFILES_DIR/<product-name>/`** you will typically see:
 | Path | Role |
 |------|------|
 | **`analysis.json`** | Full **`ProductProfile`** (metadata + analyzer dimensions) |
+| **`overrides.yaml`** | Optional user-editable overrides to correct analysis results without re-scanning |
 | **`scopes.yaml`** | Zone paths and per-role allow / read-only / forbid lists |
 | **`.cursor/rules/*.mdc`** | Generated Cursor rules |
 | **`.cursor/hooks.json`** | Hook definitions |
@@ -176,7 +286,7 @@ Under **`PB_PROFILES_DIR/<product-name>/`** you will typically see:
 2. **Hooks (smart block)** — `hooks.json` blocks edits with an explanation (e.g. read-only zone).
 3. **Permissions (hard deny)** — `cli.json` enforces filesystem boundaries for the CLI/agent.
 
-**`scopes.yaml`** maps **zones** (e.g. `frontend_ui`, `database`) to **glob patterns** and lists which **contributor roles** may read, write, or must not touch each zone. Generators consume the profile’s **`ScopeConfig`** (from YAML or auto-detection) to produce aligned rules, hooks, and permissions.
+**`scopes.yaml`** maps **zones** (e.g. `frontend_ui`, `database`) to **glob patterns** and lists which **contributor roles** may read, write, or must not touch each zone. Zone detection now supports `src/`-prefixed paths and nested directories (e.g., `src/app/api/`, `src/lib/__tests__/`, `supabase/migrations/`), not just root-level patterns. Generators consume the profile’s **`ScopeConfig`** (from YAML or auto-detection) to produce aligned rules, hooks, and permissions.
 
 ---
 

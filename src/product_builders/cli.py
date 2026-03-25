@@ -202,7 +202,12 @@ def analyze(
 @click.option("--validate", is_flag=True, help="Run structural validation after generation.")
 @click.pass_context
 def generate(ctx: click.Context, name: str, role_alias: str | None, validate: bool) -> None:
-    """Regenerate Cursor rules and governance from a cached product profile."""
+    """Regenerate Cursor rules and governance from a cached product profile.
+
+    If profiles/<name>/overrides.yaml exists, its values are merged into the
+    profile before generation, allowing post-analysis corrections without
+    re-running analyze.
+    """
     config: Config = ctx.obj["config"]
 
     try:

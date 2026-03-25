@@ -54,6 +54,12 @@
 | rule-lifecycle | Implement rule lifecycle management (re-analysis triggers, drift detection) | Phase 5 | **done** |
 | bg-agent-api | Integrate Cursor Background Agent API for automated bulk analysis | Phase 5 | **deferred** (API TBD; no in-repo stub) |
 | metrics | Implement metrics & observability for rule effectiveness | Phase 5 | **done** (JSONL + `metrics` CLI) |
+| zone-detection-improvements | Zone detection: support `src/`-prefixed paths and nested directories (e.g. `src/app/api/`, `src/lib/__tests__/`, `supabase/migrations/`) | Phase 2 | **done** (commit 580627b) |
+| baas-component-detection | BaaS-aware database detection (Supabase, Firebase, DynamoDB, PlanetScale, Neon) and modern component library detection (shadcn, base-ui, nextui, park-ui, daisyui) | Phase 2 | **done** (commit 2f5f457) |
+| blocked-command-filtering | Smart blocked-command filtering: only block tool-specific commands (prisma:migrate, alembic upgrade, flyway migrate, etc.) when the tool is in the project's dependencies | Phase 3 | **done** (commit 0ed031c) |
+| template-numbering-fix | Testing template sequential numbering fix (no gaps when optional rules are skipped) | Phase 3 | **done** (commit b135dfc) |
+| overrides-yaml-wiring | Wire overrides.yaml into the generate pipeline (`profiles/<name>/overrides.yaml` applied during generation) | Phase 3 | **done** (commit d242ce4) |
+| node-modules-exclusion | Fix node_modules exclusion in analysis | Phase 2 | **done** (commit a8614c1) |
 
 ---
 

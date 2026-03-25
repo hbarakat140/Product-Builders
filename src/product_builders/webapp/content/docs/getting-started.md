@@ -5,8 +5,9 @@ Product Builders turns a repository into **Cursor rules**, **hooks**, **CLI perm
 ## Flow
 
 1. **Analyze** — Offline scan of the repo (stack, structure, security, tests, CI/CD, …).
-2. **Deep analysis** (optional) — Enrich the profile using the bootstrap meta-rule in Cursor.
-3. **Generate** — Emit `.mdc` rules, `hooks.json`, `cli.json`, scopes, and role onboarding under a profile directory.
+2. **Override** (optional) — Create `profiles/<name>/overrides.yaml` to correct or extend any analysis field before generation.
+3. **Deep analysis** (optional) — Enrich the profile using the bootstrap meta-rule in Cursor.
+4. **Generate** — Emit `.mdc` rules, `hooks.json`, `cli.json`, scopes, and role onboarding under a profile directory. If `overrides.yaml` exists, its values are merged into the profile automatically.
 
 ## Install
 

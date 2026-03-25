@@ -11,6 +11,8 @@ Templates are Jinja2-driven from the `ProductProfile`.
 
 **Smart blocking** of dangerous operations (`preToolUse`, `beforeShellExecution`) with clear messages — not a full sandbox, but high-signal guardrails.
 
+Blocked commands are **filtered by the project's actual tech stack**: tool-specific commands (e.g., `prisma migrate`, `drizzle push`) are only blocked when that tool is detected as a dependency. This avoids false-positive blocks for tools not present in the project.
+
 ## Layer 3 — Permissions (`cli.json`)
 
 **Hard** filesystem allow/deny rules for the Cursor CLI — strongest enforcement layer.

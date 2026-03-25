@@ -273,7 +273,7 @@ Example hook output when a PM tries to edit a migration file:
 }
 ```
 
-Shell commands are intercepted via `beforeShellExecution` or `preToolUse` with matcher `Shell`. Both file and shell blocking can return helpful redirect messages.
+Shell commands are intercepted via `beforeShellExecution` or `preToolUse` with matcher `Shell`. Blocked commands are filtered by tech stack: tool-specific commands like `prisma:migrate`, `alembic upgrade`, and `flyway migrate` are only blocked when that tool is actually present in the project's dependencies. Both file and shell blocking can return helpful redirect messages.
 
 **Known caveat**: On Windows, `preToolUse` may fail with ENAMETOOLONG when editing very large files (payload includes full content). Mitigation: cli.json (Layer 3) always enforces; test on Windows during pilot. Most PM/designer edits touch smaller files.
 
@@ -364,7 +364,7 @@ contributor_scopes:
     forbidden_zones: [database, infrastructure, security, configuration]
 ```
 
-The heuristic analyzers auto-detect zone paths from the project structure. Product teams then customize `scopes.yaml` to define which contributor types can access which zones.
+The heuristic analyzers auto-detect zone paths from the project structure, including `src/`-prefixed paths and nested directories (e.g., `src/app/api/`, `src/lib/__tests__/`, `supabase/migrations/`). Product teams then customize `scopes.yaml` to define which contributor types can access which zones.
 
 The tool generates all three enforcement layers (rules, hooks, permissions) from this single `scopes.yaml` definition.
 
@@ -492,8 +492,8 @@ The `setup` command:
 
 ### CRITICAL — Can cause data loss or security breaches
 
-1. **Tech Stack**: Languages (file extensions + config files), frameworks (dependency manifests), build tools, runtime versions.
-2. **Data Model & Database**: ORM (Hibernate, SQLAlchemy, Prisma, TypeORM, ActiveRecord, EF...), migration tool (Alembic, Flyway, Knex, Django...), database type, schema naming conventions, relationship patterns. Rule strongly warns AI about migration safety.
+1. **Tech Stack**: Languages (file extensions + config files), frameworks (dependency manifests), build tools, runtime versions. Detects modern component libraries (shadcn, base-ui, nextui, park-ui, daisyui).
+2. **Data Model & Database**: ORM (Hibernate, SQLAlchemy, Prisma, TypeORM, ActiveRecord, EF...), migration tool (Alembic, Flyway, Knex, Django...), database type, schema naming conventions, relationship patterns. BaaS-aware detection maps Supabase to postgresql, Firebase to firebase, DynamoDB, PlanetScale to mysql, and Neon to postgresql. Next.js App Router API routes are detected as REST APIs. Rule strongly warns AI about migration safety.
 3. **Authentication & Authorization**: Auth middleware/guards, permission/role model, token handling, protected route patterns, session management.
 
 ### HIGH IMPACT — Breaks production functionality
@@ -622,7 +622,7 @@ Validation is part of the `generate` command (`--validate` flag) for structural 
 - **Unified source format (inspired by CodeGuard)**: Rules generated from intermediate JSON profiles. Future-proofs for Windsurf/Copilot.
 - **Both centralized and exportable**: Profiles and rules live centrally in `profiles/{product-name}/`. Export command syncs to product repos.
 - **Template-driven generation**: Jinja2 templates for easy iteration on rule quality.
-- **Overrides system**: `overrides.yaml` per product for manual corrections.
+- **Overrides system**: `overrides.yaml` per product for manual corrections. Now wired into the `generate` pipeline — users create `profiles/<name>/overrides.yaml` to correct analysis mistakes, and overrides are applied automatically during generation without re-scanning.
 - **Rule lifecycle management**: Re-analysis triggers, drift detection, feedback loop, version tracking.
 - **Analyzer failure handling**: Analyzers that fail (e.g. malformed config files, missing dependencies) produce a partial result with `status: "error"` and `error_message`. Overall analysis continues with partial profile. Errors surfaced in CLI output and recorded in `analysis.json`.
 - **Mixed Git platforms**: The `git_workflow` analyzer is platform-aware (GitHub, GitLab, Azure DevOps, Bitbucket). Detects platform from CI config files and generates platform-appropriate PR workflow guidance.

@@ -38,8 +38,10 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 ### Two Deliverables
 
 1. **CLI tool** (Python/Click)
-   - Analyzes product codebases (18 dimensions)
+   - Analyzes product codebases (18 dimensions), including BaaS-aware database detection (Supabase, Firebase, DynamoDB, PlanetScale, Neon)
    - Generates Cursor rules (14 `.mdc` files), hooks, and permissions
+   - Smart blocked-command filtering: tool-specific commands (e.g. `prisma:migrate`, `alembic upgrade`) are only blocked when the tool is in the project's dependencies
+   - `overrides.yaml` support: create `profiles/<name>/overrides.yaml` to correct analysis results without re-scanning; applied automatically during `generate`
    - Produces onboarding guides and AI review checklists
    - Runs locally; no external LLM API keys
    - Commands: `analyze`, `generate`, `setup`, `export`, `list`, `bulk-analyze`
@@ -143,6 +145,7 @@ The solution consists of two deliverables: a **CLI tool** that analyzes codebase
 
 - Re-analyze after major releases
 - Feedback loop: developers flag inaccurate rules; fed into next regeneration
+- Quick corrections: edit `profiles/<name>/overrides.yaml` to fix analysis mistakes without re-scanning
 - Template updates: regenerate all products from cached profiles
 
 ---
