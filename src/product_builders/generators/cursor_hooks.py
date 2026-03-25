@@ -19,7 +19,7 @@ from product_builders.generators.base import BaseGenerator
 from product_builders.generators.registry import register
 from product_builders.models.profile import ProductProfile
 from product_builders.models.scopes import ContributorRole
-from product_builders.profiles.base import DEFAULT_PROFILES
+from product_builders.profiles.base import DEFAULT_PROFILES, filter_blocked_commands
 
 logger = logging.getLogger(__name__)
 
@@ -106,10 +106,14 @@ class CursorHooksGenerator(BaseGenerator):
             })
 
         # beforeShellExecution hooks for blocked commands
-        if prof_def.blocked_shell_commands:
+        dep_names = {d.name for d in profile.dependencies.dependencies}
+        filtered_commands = filter_blocked_commands(
+            prof_def.blocked_shell_commands, dep_names
+        )
+        if filtered_commands:
             hooks.append({
                 "event": "beforeShellExecution",
-                "commandPatterns": prof_def.blocked_shell_commands,
+                "commandPatterns": filtered_commands,
                 "message": (
                     f"🚫 This command is restricted for your role ({prof_def.display_name}). "
                     f"These operations can affect production data or deployment. "

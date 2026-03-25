@@ -39,6 +39,50 @@ class ContributorProfile(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Tool-specific command filtering
+# ---------------------------------------------------------------------------
+
+# Mapping: command -> set of dependency names that make the command relevant.
+# Commands not in this dict are considered universal (always blocked).
+_TOOL_SPECIFIC_COMMANDS: dict[str, set[str]] = {
+    "prisma:migrate": {"prisma", "@prisma/client"},
+    "prisma:db push": {"prisma", "@prisma/client"},
+    "alembic upgrade": {"alembic", "sqlalchemy"},
+    "alembic downgrade": {"alembic", "sqlalchemy"},
+    "flyway migrate": {"flyway"},
+    "docker build": {"docker"},
+    "docker push": {"docker"},
+}
+
+
+def filter_blocked_commands(
+    commands: list[str], detected_deps: set[str]
+) -> list[str]:
+    """Remove tool-specific blocked commands when the tool isn't in the project.
+
+    Universal safety commands (rm -rf, git push --force, npm publish, etc.)
+    are always kept.  Tool-specific commands (prisma:migrate, alembic upgrade)
+    are only kept when a related dependency is detected.
+
+    If *detected_deps* is empty, all commands are kept (safe default).
+    """
+    if not detected_deps:
+        return list(commands)
+
+    result: list[str] = []
+    for cmd in commands:
+        required = _TOOL_SPECIFIC_COMMANDS.get(cmd)
+        if required is None:
+            # Universal command -- always keep
+            result.append(cmd)
+        elif required & detected_deps:
+            # Tool-specific and tool IS present -- keep
+            result.append(cmd)
+        # else: tool-specific and tool NOT present -- skip
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Default profiles
 # ---------------------------------------------------------------------------
 
