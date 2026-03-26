@@ -109,21 +109,32 @@ flowchart TB
     end
   end
 
-  subgraph deep [Phase 2: Deep Analysis - Via Cursor Itself]
-    Bootstrap["Bootstrap Meta-Rule\n(.mdc with heuristic\nresults + prompts)"]
-    CursorAgent["Cursor Agent\n(codebase index + LLM)"]
-    Prompts["Structured Prompts\n(architecture, domain,\nconventions, patterns)"]
+  subgraph ast [Phase 1b: AST Pre-Pass - Optional]
+    ASTIndex["CodebaseIndex\n(tree-sitter)"]
+    TSExtractor["TypeScript/JS\nExtractor"]
+    PyExtractor["Python\nExtractor"]
+  end
+
+  subgraph deep [Phase 2: Deep Analysis - Via Cursor]
+    Bootstrap["Adaptive Bootstrap\nMeta-Rule (.mdc)"]
+    CursorAgent["Cursor Agent\n(reads code + follows prompts)"]
+    DeepYAML["deep-analysis.yaml\n(evidence-based findings)"]
+    IngestDeep["ingest-deep CLI\n(validate + merge)"]
   end
 
   subgraph output [Output]
     Profile["Product Profile\n(JSON)"]
-    CursorRules["14 Cursor Rule Files\n(.mdc)"]
+    CursorRules["17 Cursor Rule Files\n(.mdc)"]
     CursorHooks["Safety Hooks\n(hooks.json)"]
     TeamRecs["Team Rules\nRecommendations"]
     OnboardDoc["PM Onboarding\nGuide"]
   end
 
   Repo --> heuristic
+  Repo --> ast
+  ASTIndex --> heuristic
+  TSExtractor --> ASTIndex
+  PyExtractor --> ASTIndex
   heuristic --> Profile
   Standards --> Profile
   Overrides --> Profile
@@ -132,8 +143,9 @@ flowchart TB
 
   Profile --> Bootstrap
   Bootstrap --> CursorAgent
-  Prompts --> CursorAgent
-  CursorAgent -->|"enriched analysis"| Profile
+  CursorAgent --> DeepYAML
+  DeepYAML --> IngestDeep
+  IngestDeep -->|"enriched deep fields"| Profile
 
   Profile --> CursorRules
   Profile --> CursorHooks
@@ -142,6 +154,37 @@ flowchart TB
 ```
 
 
+
+### AST Pre-Pass (Optional)
+
+When tree-sitter is installed (`pip install product-builders[ast]`), the `analyze` command runs an AST pre-pass before the heuristic analyzers:
+
+1. **TechStack analyzer runs first** to detect which languages are present
+2. **`build_codebase_index()`** parses up to 500 source files using tree-sitter
+3. The resulting **`CodebaseIndex`** is passed to all remaining analyzers
+
+The index provides:
+- **Import graph** — which files import which modules
+- **Export registry** — public API surface of each module
+- **Definition registry** — functions, classes, interfaces with decorators and signatures
+- **Component tree** — JSX/TSX component hierarchy
+- **Naming samples** — actual variable/function/class names for convention detection
+
+Supported languages: TypeScript, JavaScript (including TSX/JSX), Python.
+
+Enhanced analyzers: auth (decorator-based detection), error handling (precise exception class discovery), conventions (code symbol naming), API patterns (route decorator detection), frontend patterns (component usage), state management (import verification).
+
+### Deep Analysis Pipeline
+
+After heuristic + AST analysis, users can optionally run Cursor-assisted deep analysis:
+
+1. **`analyze`** generates an adaptive bootstrap `.mdc` rule with tech-stack-specific questions
+2. User opens the repo in Cursor and says "run deep analysis"
+3. Cursor follows 3 sequential steps (architecture, domain model, conventions), writing findings to **`deep-analysis.yaml`** with file-path evidence
+4. **`ingest-deep`** validates evidence citations and merges into the profile
+5. **`generate`** produces richer rules informed by the deep data
+
+The deep analysis populates three profile fields: `architecture_deep` (layering pattern, module boundaries, bounded contexts), `domain_model_deep` (vocabulary, entity relationships, business logic locations), and `implicit_conventions_deep` (naming philosophy, abstraction level, error handling philosophy).
 
 ### End-to-End Workflow
 

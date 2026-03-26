@@ -12,6 +12,7 @@
 | `check-drift` | Compare git HEAD and/or heuristic fingerprints to the cached profile |
 | `metrics` | Show recent `metrics.jsonl` events for a product |
 | `feedback` | Append rule accuracy notes to `feedback.yaml` |
+| `ingest-deep` | Ingest Cursor-produced deep analysis into a product profile |
 
 ## Environment
 
@@ -67,5 +68,32 @@ Additional framework signals are also detected: **shadcn** as a UI library, and 
 ## Testing template
 
 Generated test rules use sequential numbering (e.g., `001-unit-tests.mdc`, `002-integration-tests.mdc`) for deterministic ordering.
+
+## ingest-deep
+
+Ingest Cursor-produced deep analysis into a product profile.
+
+```bash
+product-builders ingest-deep --name <product> --repo /path/to/repo [--deep-file path] [--dry-run]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--name, -n` | Product name (required) |
+| `--repo, -r` | Path to the product repo for evidence validation (required) |
+| `--deep-file` | Path to deep-analysis.yaml (default: `<repo>/deep-analysis.yaml`) |
+| `--dry-run` | Validate only, do not merge into profile |
+
+The command validates the YAML structure, checks that evidence file citations exist in the repo, then merges the deep fields into the existing analysis.json. Run `generate` afterwards to refresh rules with the enriched data.
+
+## AST-Enhanced Analysis
+
+Install the optional AST extra for deeper code pattern recognition:
+
+```bash
+pip install product-builders[ast]
+```
+
+When installed, `analyze` automatically runs a tree-sitter pre-pass that parses TypeScript, JavaScript, and Python files to extract structural data. This enriches auth, error handling, conventions, API, frontend patterns, and state management analyzers.
 
 For full architecture, see the repository **ARCHITECTURE.md**.

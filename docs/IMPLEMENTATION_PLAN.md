@@ -60,6 +60,8 @@
 | template-numbering-fix | Testing template sequential numbering fix (no gaps when optional rules are skipped) | Phase 3 | **done** (commit b135dfc) |
 | overrides-yaml-wiring | Wire overrides.yaml into the generate pipeline (`profiles/<name>/overrides.yaml` applied during generation) | Phase 3 | **done** (commit d242ce4) |
 | node-modules-exclusion | Fix node_modules exclusion in analysis | Phase 2 | **done** (commit a8614c1) |
+| deep-analysis-pipeline | Cursor-assisted deep analysis: adaptive bootstrap prompts, evidence-based `deep-analysis.yaml`, `ingest-deep` CLI command, enriched templates for architecture/domain/conventions | Phase 2 | **done** |
+| tree-sitter-ast | Tree-sitter AST integration: `CodebaseIndex` pre-pass, TypeScript/JavaScript/Python extractors, enhanced analyzers (auth, error_handling, conventions, api, frontend_patterns, state_management), optional `[ast]` dependency | Phase 2 | **done** |
 
 ---
 

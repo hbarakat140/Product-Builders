@@ -35,7 +35,10 @@
 | **Onboarding & checklist** | Role docs and CI-friendly review checklist |
 | **Metrics** (`metrics.jsonl`) | Optional events from validate, drift checks, etc. |
 
-Analysis is **fully offline** (no LLM calls in the core pipeline). A **bootstrap meta-rule** can be generated for deeper, Cursor-assisted analysis when you do not pass `--heuristic-only`.
+Analysis is **fully offline** (no LLM calls in the core pipeline). Additional capabilities:
+
+- **Adaptive deep analysis prompts** -- a bootstrap `.mdc` rule with tech-stack-specific questions that guide Cursor through 3-step deep analysis (architecture, domain model, conventions). Results are written to `deep-analysis.yaml` with file-path evidence.
+- **AST-enhanced analyzers** -- optional tree-sitter integration (`pip install product-builders[ast]`) that parses TypeScript, JavaScript, and Python source files to extract imports, exports, function definitions, decorators, and JSX components. Enriches auth, error handling, conventions, API, frontend patterns, and state management detection.
 
 **Recent improvements:** BaaS-aware database detection (Supabase to postgresql, Firebase to firebase, DynamoDB, PlanetScale to mysql, Neon to postgresql), smart blocked-command filtering (dangerous commands like `prisma:migrate` or `alembic upgrade` are only blocked when that tool is actually in the project's dependencies), `overrides.yaml` support for post-analysis corrections, and improved zone detection with nested directory support.
 
@@ -66,6 +69,9 @@ Entry points:
 ```bash
 # Web UI + API (FastAPI, uvicorn, markdown rendering)
 pip install -e ".[webapp]"
+
+# AST-enhanced analysis (tree-sitter for deeper code pattern recognition)
+pip install -e ".[ast]"
 
 # Tests, coverage, Ruff, mypy
 pip install -e ".[dev]"
@@ -203,6 +209,10 @@ Paths default to a layout relative to the package / checkout unless you override
 # 1. Scan repo → profiles/<name>/analysis.json (+ analyzers output)
 product-builders analyze /path/to/repo --name my-product
 
+# 1b. (Optional) Deep analysis: open repo in Cursor, say "run deep analysis"
+#     Cursor follows the bootstrap rule and writes deep-analysis.yaml
+product-builders ingest-deep --name my-product --repo /path/to/repo
+
 # 2. Regenerate artifacts from profile (add --validate for structural checks)
 product-builders generate --name my-product
 
@@ -237,6 +247,7 @@ Global options: **`--version`**, **`-v` / `--verbose`** (debug logging), **`--he
 |---------|-------------|-------------|
 | **`analyze`** | Analyze a product codebase and generate a product profile. Runs heuristic analyzers (fully offline); optionally generates a bootstrap meta-rule for Cursor deep analysis. | **`-n, --name`** (required), **`--heuristic-only`**, **`--sub-project`** |
 | **`generate`** | Regenerate Cursor rules and governance from a cached profile. Applies `overrides.yaml` if present. | **`-n, --name`** (required), **`-p, --profile`** (role alias), **`--validate`** |
+| **`ingest-deep`** | Ingest Cursor-produced deep analysis into a cached profile | **`-n, --name`** (required), **`-r, --repo`** (required), **`--deep-file`**, **`--dry-run`** |
 | **`setup`** | Configure local governance for a contributor role in the **current directory** (`.cursor/rules/`, `hooks.json`, `cli.json`, `contributor-profile.json`). | **`-n, --name`** (required), **`-p, --profile`** (required) |
 | **`export`** | Export generated rules, hooks, and scopes to a target product repo. | **`-n, --name`** (required), **`-t, --target`** (required), **`-p, --profile`** |
 | **`list`** | List all analyzed products (from `analysis.json` under profiles dir). | — |
@@ -341,6 +352,8 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000). **`GET /health`** for healt
 | POST | **`/api/feedback`** | Submit rule feedback |
 | WebSocket | **`/api/ws/execute?job_id={id}`** | Stream job output in real time |
 | GET | **`/api/docs`** | OpenAPI (Swagger UI) |
+
+**Note:** `ingest-deep` is a CLI-only command with no web API endpoint yet.
 
 ---
 
