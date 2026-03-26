@@ -1,0 +1,43 @@
+---
+description: "CI/CD pipeline for {{ profile.metadata.name }}"
+globs:
+  - ".github/workflows/**"
+  - ".gitlab-ci.yml"
+  - "Jenkinsfile"
+  - "azure-pipelines.yml"
+  - ".circleci/**"
+alwaysApply: false
+priority: 20
+---
+
+# CI/CD
+
+{% if profile.cicd.platform %}
+## Platform
+
+**{{ profile.cicd.platform }}**{% if profile.cicd.config_path %} — `{{ profile.cicd.config_path }}`{% endif %}
+
+{% endif %}
+
+{% if profile.cicd.build_steps %}
+## Build Steps
+
+{% for step in profile.cicd.build_steps %}
+- {{ step }}
+{% endfor %}
+{% endif %}
+
+{% if profile.cicd.deployment_targets %}
+## Deployment Targets
+
+{% for target in profile.cicd.deployment_targets %}
+- {{ target }}
+{% endfor %}
+{% endif %}
+
+## Rules
+
+1. All changes must pass CI before merging
+2. Do not modify CI/CD configuration without team review
+3. Keep build steps fast — cache dependencies where possible
+4. Never commit secrets to CI configuration files

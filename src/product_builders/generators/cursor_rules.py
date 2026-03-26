@@ -30,6 +30,7 @@ RULE_TEMPLATES: list[tuple[str, str]] = [
     ("error-handling.mdc.j2", "error-handling.mdc"),
     ("architecture.mdc.j2", "architecture.mdc"),
     ("coding-conventions.mdc.j2", "coding-conventions.mdc"),
+    ("dependencies.mdc.j2", "dependencies.mdc"),
     ("testing.mdc.j2", "testing.mdc"),
     ("git-workflow.mdc.j2", "git-workflow.mdc"),
     ("design-system.mdc.j2", "design-system.mdc"),
@@ -39,6 +40,7 @@ RULE_TEMPLATES: list[tuple[str, str]] = [
     ("i18n.mdc.j2", "i18n.mdc"),
     ("state-and-config.mdc.j2", "state-and-config.mdc"),
     ("performance.mdc.j2", "performance.mdc"),
+    ("cicd.mdc.j2", "cicd.mdc"),
     ("contributor-guide.mdc.j2", "contributor-guide.mdc"),
 ]
 
@@ -51,7 +53,7 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
             or profile.database.database_type is not None
             or bool(profile.domain_model_deep.entity_relationships)
         ),
-        "auth-patterns.mdc.j2": profile.auth.auth_strategy is not None or bool(profile.auth.auth_directories),
+        "auth-patterns.mdc.j2": profile.auth.auth_strategy is not None,
         "architecture.mdc.j2": (
             profile.architecture_deep.layering_pattern is not None
             or bool(profile.architecture_deep.module_boundaries)
@@ -65,11 +67,11 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
         ),
         "testing.mdc.j2": profile.testing.test_framework is not None,
         "design-system.mdc.j2": profile.design_ui.component_library is not None or profile.design_ui.css_methodology is not None,
-        "accessibility.mdc.j2": profile.accessibility.wcag_level is not None or profile.accessibility.aria_usage_detected,
-        "api-patterns.mdc.j2": (
-            profile.api.api_style is not None
-            or bool(profile.domain_model_deep.business_logic_locations)
+        "accessibility.mdc.j2": (
+            profile.accessibility.wcag_level is not None
+            or bool(profile.accessibility.a11y_testing_tools)
         ),
+        "api-patterns.mdc.j2": profile.api.api_style is not None,
         "i18n.mdc.j2": profile.i18n.i18n_framework is not None,
         "state-and-config.mdc.j2": (
             profile.state_management.state_library is not None
@@ -86,6 +88,8 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
             or profile.performance.lazy_loading
             or profile.performance.code_splitting
         ),
+        "dependencies.mdc.j2": bool(profile.dependencies.dependencies),
+        "cicd.mdc.j2": profile.cicd.platform is not None,
     }
     return checks.get(template_name, True)
 

@@ -66,6 +66,14 @@ Tool: **{{ profile.performance.image_optimization }}**
 All images must go through the optimization pipeline.
 {% endif %}
 
+{% if profile.performance.bundle_size_config %}
+## Bundle Configuration
+
+Config: **{{ profile.performance.bundle_size_config }}**
+
+> Monitor bundle sizes. Keep critical path bundles small.
+{% endif %}
+
 {% if company_standards and company_standards.performance %}
 ## Company Performance Standards
 

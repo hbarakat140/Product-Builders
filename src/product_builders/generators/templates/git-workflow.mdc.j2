@@ -58,3 +58,9 @@ Use **{{ profile.git_workflow.merge_strategy }}** merges.
 {% if profile.git_workflow.required_reviewers %}
 5. Minimum reviewers: {{ profile.git_workflow.required_reviewers }}
 {% endif %}
+
+{% if profile.git_workflow.release_tagging %}
+## Release Strategy
+
+Tagging pattern: **{{ profile.git_workflow.release_tagging }}**
+{% endif %}

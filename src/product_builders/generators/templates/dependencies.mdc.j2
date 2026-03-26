@@ -1,0 +1,50 @@
+---
+description: "Dependency management for {{ profile.metadata.name }}"
+globs:
+  - "package.json"
+  - "requirements*.txt"
+  - "pyproject.toml"
+  - "Gemfile"
+  - "Cargo.toml"
+  - "go.mod"
+  - "*.csproj"
+  - "pom.xml"
+alwaysApply: false
+priority: 25
+---
+
+# Dependencies
+
+{% if profile.dependencies.dependencies %}
+## Key Libraries
+
+{% for dep in profile.dependencies.dependencies[:20] %}
+{% if not dep.is_dev %}
+- **{{ dep.name }}**{% if dep.version %} {{ dep.version }}{% endif %}{% if dep.category %} ({{ dep.category }}){% endif %}
+
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if profile.dependencies.dependency_manifest_files %}
+## Manifest Files
+
+{% for f in profile.dependencies.dependency_manifest_files %}
+- `{{ f }}`
+{% endfor %}
+{% endif %}
+
+{% if profile.dependencies.lock_file %}
+## Lock File
+
+Lock file: `{{ profile.dependencies.lock_file }}`
+
+> Always commit the lock file. Never manually edit it.
+{% endif %}
+
+## Rules
+
+1. Add new dependencies through the package manager — never edit manifests manually
+2. Prefer well-maintained, actively developed libraries
+3. Keep dev dependencies separate from production dependencies
+4. Run security audits regularly (`npm audit`, `pip-audit`, etc.)

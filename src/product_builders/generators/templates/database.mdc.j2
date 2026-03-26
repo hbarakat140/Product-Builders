@@ -17,6 +17,9 @@ priority: 50
 {% if profile.database.orm %}
 **ORM**: {{ profile.database.orm }}{% if profile.database.orm_version %} {{ profile.database.orm_version }}{% endif %}
 
+{% if profile.database.orm_version %}
+**Version**: {{ profile.database.orm_version }}
+{% endif %}
 {% endif %}
 
 ## Critical Rules

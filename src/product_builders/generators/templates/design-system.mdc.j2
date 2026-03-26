@@ -70,3 +70,11 @@ Strategy: **{{ profile.design_ui.responsive_strategy }}**
 
 All UI changes must be responsive. Test on mobile, tablet, and desktop viewports.
 {% endif %}
+
+{% if profile.design_ui.theme_provider %}
+## Theme Provider
+
+Theme: **{{ profile.design_ui.theme_provider }}**
+
+> Use the theme provider for consistent styling. Do not hardcode colors or spacing values.
+{% endif %}

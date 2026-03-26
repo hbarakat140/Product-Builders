@@ -54,6 +54,28 @@ This project uses ARIA attributes. Follow these guidelines:
 {% endfor %}
 {% endif %}
 
+{% if profile.accessibility.semantic_html_score %}
+## Semantic HTML
+
+Score: **{{ profile.accessibility.semantic_html_score }}**
+
+> Use semantic HTML elements (nav, main, article, section) instead of generic divs.
+{% endif %}
+
+{% if profile.accessibility.keyboard_navigation %}
+## Keyboard Navigation
+
+Keyboard navigation patterns detected.
+
+> Ensure all interactive elements are keyboard accessible. Test with Tab, Enter, and Escape keys.
+{% endif %}
+
+{% if profile.accessibility.color_contrast_config %}
+## Color Contrast
+
+Configuration: **{{ profile.accessibility.color_contrast_config }}**
+{% endif %}
+
 ## Checklist
 
 Before submitting any UI change:

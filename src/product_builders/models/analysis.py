@@ -68,6 +68,8 @@ class DatabaseResult(AnalysisResult):
     relationship_patterns: list[str] = Field(default_factory=list)
     has_seeds: bool = False
     seed_directory: str | None = None
+    connection_pooling: str | None = None
+    schema_patterns: list[str] = Field(default_factory=list)
 
 
 class AuthResult(AnalysisResult):
@@ -77,9 +79,10 @@ class AuthResult(AnalysisResult):
     auth_middleware: list[str] = Field(default_factory=list)
     permission_model: str | None = None  # rbac, abac, acl, etc.
     protected_route_patterns: list[str] = Field(default_factory=list)
-    token_handling: str | None = None
-    session_management: str | None = None
     auth_directories: list[str] = Field(default_factory=list)
+    mfa_methods: list[str] = Field(default_factory=list)
+    oauth_providers: list[str] = Field(default_factory=list)
+    rate_limiting: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -111,6 +114,8 @@ class ErrorHandlingResult(AnalysisResult):
     monitoring_integration: str | None = None  # sentry, datadog, etc.
     error_response_format: str | None = None  # json, html, etc.
     custom_error_classes: list[str] = Field(default_factory=list)
+    structured_logging: bool = False
+    error_recovery_patterns: list[str] = Field(default_factory=list)
 
 
 class I18nResult(AnalysisResult):
@@ -122,6 +127,9 @@ class I18nResult(AnalysisResult):
     default_locale: str | None = None
     supported_locales: list[str] = Field(default_factory=list)
     string_externalization_pattern: str | None = None
+    message_format: str | None = None  # icu, simple-key-value
+    rtl_languages: list[str] = Field(default_factory=list)
+    translation_management: str | None = None  # crowdin, lokalise, phrase, etc.
 
 
 class StateManagementResult(AnalysisResult):
@@ -131,6 +139,8 @@ class StateManagementResult(AnalysisResult):
     data_fetching_library: str | None = None  # react-query, swr, apollo
     store_structure: str | None = None
     state_patterns: list[str] = Field(default_factory=list)
+    form_library: str | None = None
+    realtime_library: str | None = None
 
 
 class EnvConfigResult(AnalysisResult):
@@ -143,6 +153,8 @@ class EnvConfigResult(AnalysisResult):
     docker_compose_path: str | None = None
     feature_flags_system: str | None = None
     config_directories: list[str] = Field(default_factory=list)
+    secrets_management: str | None = None
+    kubernetes_detected: bool = False
 
 
 class GitWorkflowResult(AnalysisResult):
@@ -156,6 +168,9 @@ class GitWorkflowResult(AnalysisResult):
     required_reviewers: int | None = None
     ci_config_path: str | None = None
     release_tagging: str | None = None
+    codeowners_path: str | None = None
+    changelog_path: str | None = None
+    release_tool: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +231,11 @@ class TestingResult(AnalysisResult):
     coverage_config_path: str | None = None
     fixture_patterns: list[str] = Field(default_factory=list)
     e2e_framework: str | None = None
+    api_testing_tools: list[str] = Field(default_factory=list)
+    visual_regression_tool: str | None = None
+    contract_testing_tool: str | None = None
+    test_organization: str | None = None  # collocated, separated, bdd
+    snapshot_testing: bool = False
 
 
 class CICDResult(AnalysisResult):
@@ -232,6 +252,10 @@ class CICDResult(AnalysisResult):
             "kept empty unless populated by a future integration."
         ),
     )
+    caching_detected: bool = False
+    matrix_builds: bool = False
+    deployment_patterns: list[str] = Field(default_factory=list)
+    release_tool: str | None = None
 
 
 class DesignUIResult(AnalysisResult):
@@ -247,6 +271,9 @@ class DesignUIResult(AnalysisResult):
     styling_directories: list[str] = Field(default_factory=list)
     uses_shared_design_system: bool = False
     shared_design_system_name: str | None = None
+    icon_library: str | None = None
+    component_doc_tool: str | None = None
+    font_strategy: str | None = None
 
 
 class AccessibilityResult(AnalysisResult):
@@ -258,6 +285,8 @@ class AccessibilityResult(AnalysisResult):
     semantic_html_score: str | None = None  # low, medium, high
     keyboard_navigation: bool = False
     color_contrast_config: str | None = None
+    form_accessibility: list[str] = Field(default_factory=list)
+    focus_management_patterns: list[str] = Field(default_factory=list)
 
 
 class APIResult(AnalysisResult):
@@ -283,6 +312,9 @@ class PerformanceResult(AnalysisResult):
     image_optimization: str | None = None
     n_plus_one_prevention: str | None = None
     performance_monitoring: str | None = None
+    web_vitals_monitoring: str | None = None
+    service_worker_detected: bool = False
+    cdn_detected: str | None = None
 
 
 class FrontendPatternsResult(AnalysisResult):
@@ -308,6 +340,8 @@ class UserFlowsResult(AnalysisResult):
     has_404_page: bool = False
     has_error_page: bool = False
     page_directories: list[str] = Field(default_factory=list)
+    dynamic_routes: list[str] = Field(default_factory=list)
+    lazy_routes: bool = False
 
 
 # ---------------------------------------------------------------------------
