@@ -1,0 +1,40 @@
+---
+description: "Architecture and module boundaries for seeker1"
+globs:
+alwaysApply: false
+priority: 40
+---
+
+# Architecture
+
+**Organization**: flat
+
+
+## Module Boundaries
+
+Key modules:
+
+- `docs` — Documentation
+- `src` — Source code
+- `src/app` — Application code
+- `src/app/api` — API endpoints
+- `src/components` — UI components
+- `src/lib` — Library code
+- `src/lib/pipeline/__tests__` — Test files (Jest convention)
+- `src/lib/supabase/__tests__` — Test files (Jest convention)
+- `src/types` — TypeScript type definitions
+- `supabase/migrations` — Database migrations
+
+
+## Source Layout
+
+- `src/`
+
+> Place new code in the appropriate directory following the existing structure.
+
+## Rules
+
+1. Follow the existing module organization — do not restructure without explicit approval
+2. Keep dependencies flowing in one direction (see module boundaries above)
+3. New modules should follow the same patterns as existing ones
+4. Shared utilities go in the designated utilities/helpers directory

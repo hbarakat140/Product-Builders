@@ -1,0 +1,22 @@
+---
+description: "Database patterns, ORM conventions, and migration rules for seeker1"
+globs:
+
+
+alwaysApply: true
+priority: 50
+---
+
+# Database & Data Layer
+
+**Database**: postgresql
+
+## Critical Rules
+
+1. **NEVER** create or modify migration files directly — use the migration tool (`check project docs`)
+2. **NEVER** write raw SQL when the ORM provides the functionality
+3. **NEVER** modify existing migration files — create a new migration instead
+4. **ALWAYS** test migrations on a local database before committing
+
+
+

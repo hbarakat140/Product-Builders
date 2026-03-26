@@ -1,0 +1,56 @@
+---
+description: "Accessibility requirements for seeker1"
+globs:
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.vue"
+  - "**/*.svelte"
+  - "**/*.html"
+alwaysApply: false
+priority: 25
+---
+
+# Accessibility
+
+
+## Rules
+
+1. All interactive elements must be keyboard-accessible
+2. All images must have descriptive `alt` text (or `alt=""` for decorative images)
+3. Use semantic HTML elements (`<nav>`, `<main>`, `<article>`, `<button>`, etc.)
+4. Form inputs must have associated `<label>` elements
+5. Color must not be the sole means of conveying information
+6. Maintain sufficient color contrast ratios (4.5:1 for text, 3:1 for large text)
+7. ARIA attributes should supplement, not replace, semantic HTML
+
+## Testing Tools
+
+- testing-library
+
+Run accessibility tests before submitting UI changes.
+
+## ARIA Patterns
+
+This project uses ARIA attributes. Follow these guidelines:
+- Use `aria-label` for elements without visible text
+- Use `aria-describedby` for additional descriptions
+- Use `aria-live` regions for dynamic content updates
+- Use `role` attributes only when semantic HTML is insufficient
+
+## Company Accessibility Standards
+
+- **A11Y-001** (high): All interactive elements must be keyboard accessible.
+- **A11Y-002** (high): All images must have alt text. Decorative images use alt="".
+- **A11Y-003** (high): Use semantic HTML elements (button, nav, main, article) instead of generic divs with click handlers.
+- **A11Y-004** (medium): Color must not be the only means of conveying information.
+- **A11Y-005** (medium): Ensure sufficient color contrast (WCAG AA minimum — 4.5:1 for text, 3:1 for large text).
+
+## Checklist
+
+Before submitting any UI change:
+
+- [ ] Keyboard navigation works (Tab, Enter, Escape, Arrow keys)
+- [ ] Screen reader announces content correctly
+- [ ] Focus indicators are visible
+- [ ] Color contrast meets minimum ratios
+- [ ] No content is lost when zoomed to 200%

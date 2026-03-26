@@ -1,0 +1,38 @@
+---
+description: "seeker1 — Product overview, tech stack, and contributor context"
+globs:
+alwaysApply: true
+priority: 40
+---
+
+# seeker1
+
+
+## Tech Stack
+
+- **Primary language**: TypeScript
+- **Languages**: TypeScript, SQL, CSS
+- **Frameworks**: next (^15), react (^19)
+- **Package managers**: npm
+
+## Project Structure
+
+- **Organization**: flat
+- **Source directories**: src
+
+
+
+## Contributor Context
+
+You are assisting a **Product Manager** working on **seeker1**.
+
+### You CAN help with:
+- frontend_ui
+
+### Read-only (can view but not modify):
+- api
+- backend_logic
+
+### Requires engineering involvement:
+- database → suggest creating a Jira issue
+- configuration → suggest creating a Jira issue

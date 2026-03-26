@@ -3,7 +3,10 @@ pyproject.toml
 src/product_builders/__init__.py
 src/product_builders/__main__.py
 src/product_builders/cli.py
+src/product_builders/cli_wizard.py
 src/product_builders/config.py
+src/product_builders/gitutil.py
+src/product_builders/metrics.py
 src/product_builders.egg-info/PKG-INFO
 src/product_builders.egg-info/SOURCES.txt
 src/product_builders.egg-info/dependency_links.txt
@@ -45,12 +48,16 @@ src/product_builders/generators/registry.py
 src/product_builders/generators/review_checklist.py
 src/product_builders/generators/scopes.py
 src/product_builders/lifecycle/__init__.py
+src/product_builders/lifecycle/drift.py
 src/product_builders/models/__init__.py
 src/product_builders/models/analysis.py
+src/product_builders/models/heuristic_dimensions.py
 src/product_builders/models/profile.py
 src/product_builders/models/scopes.py
 src/product_builders/profiles/__init__.py
 src/product_builders/profiles/base.py
+src/product_builders/validation/__init__.py
+src/product_builders/validation/output.py
 src/product_builders/webapp/__init__.py
 src/product_builders/webapp/__main__.py
 src/product_builders/webapp/app.py
@@ -67,4 +74,6 @@ src/product_builders/webapp/templates/onboarding.html
 src/product_builders/webapp/templates/product.html
 src/product_builders/webapp/templates/docs/index.html
 src/product_builders/webapp/templates/docs/page.html
+tests/test_drift.py
+tests/test_validation.py
 tests/test_webapp.py

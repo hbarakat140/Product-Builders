@@ -1,0 +1,76 @@
+zones:
+  frontend_ui:
+    paths:
+    - src/components/**
+    - src\components/**
+    - src/components/**
+  api:
+    paths:
+    - src\app\api/**
+    - src/app/api/**
+    - src\app\api/**
+  backend_logic:
+    paths:
+    - src/lib/**
+    - src\lib/**
+    - src/lib/**
+  database:
+    paths:
+    - supabase\migrations/**
+  tests:
+    paths:
+    - src\lib\pipeline\__tests__/**
+    - src\lib\pipeline\__tests__/**
+  configuration:
+    paths:
+    - .env*
+    - config/**
+contributor_scopes:
+  engineer:
+    allowed_zones:
+    - frontend_ui
+    - api
+    - backend_logic
+    - database
+    - configuration
+    - tests
+    read_only_zones: []
+    forbidden_zones: []
+  technical_pm:
+    allowed_zones:
+    - frontend_ui
+    - api
+    read_only_zones:
+    - backend_logic
+    - tests
+    forbidden_zones:
+    - database
+    - configuration
+  product_manager:
+    allowed_zones:
+    - frontend_ui
+    read_only_zones:
+    - api
+    - backend_logic
+    forbidden_zones:
+    - database
+    - configuration
+  designer:
+    allowed_zones:
+    - frontend_ui
+    read_only_zones: []
+    forbidden_zones:
+    - api
+    - backend_logic
+    - database
+    - configuration
+  qa_tester:
+    allowed_zones:
+    - tests
+    read_only_zones:
+    - frontend_ui
+    - api
+    - backend_logic
+    forbidden_zones:
+    - database
+    - configuration

@@ -1,0 +1,72 @@
+{
+  "hooks": [
+    {
+      "event": "preToolUse",
+      "tools": [
+        "edit_file",
+        "create_file"
+      ],
+      "pathGlobs": [
+        "src\\app\\api/**",
+        "src/app/api/**",
+        "src\\app\\api/**"
+      ],
+      "message": "⚠️ This file is in the **API endpoints and routes** zone, which is read-only for your role (Product Manager). You can view this code for context but cannot modify it. If changes are needed, create a task for the engineering team.",
+      "action": "block"
+    },
+    {
+      "event": "preToolUse",
+      "tools": [
+        "edit_file",
+        "create_file"
+      ],
+      "pathGlobs": [
+        "src/lib/**",
+        "src\\lib/**",
+        "src/lib/**"
+      ],
+      "message": "⚠️ This file is in the **backend services and business logic** zone, which is read-only for your role (Product Manager). You can view this code for context but cannot modify it. If changes are needed, create a task for the engineering team.",
+      "action": "block"
+    },
+    {
+      "event": "preToolUse",
+      "tools": [
+        "edit_file",
+        "create_file",
+        "delete_file"
+      ],
+      "pathGlobs": [
+        "supabase\\migrations/**"
+      ],
+      "message": "🚫 This file is in the **database schemas and migrations** zone, which is restricted for your role (Product Manager). This area requires engineering team involvement. Please create a Jira/Linear task describing the change you need.",
+      "action": "block"
+    },
+    {
+      "event": "preToolUse",
+      "tools": [
+        "edit_file",
+        "create_file",
+        "delete_file"
+      ],
+      "pathGlobs": [
+        ".env*",
+        "config/**"
+      ],
+      "message": "🚫 This file is in the **configuration files** zone, which is restricted for your role (Product Manager). This area requires engineering team involvement. Please create a Jira/Linear task describing the change you need.",
+      "action": "block"
+    },
+    {
+      "event": "beforeShellExecution",
+      "commandPatterns": [
+        "npm publish",
+        "yarn publish",
+        "rm -rf",
+        "git push --force",
+        "git push -f",
+        "git reset --hard"
+      ],
+      "message": "🚫 This command is restricted for your role (Product Manager). These operations can affect production data or deployment. Please ask the engineering team to run this command.",
+      "action": "block"
+    }
+  ]
+}

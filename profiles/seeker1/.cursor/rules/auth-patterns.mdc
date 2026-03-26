@@ -1,0 +1,22 @@
+---
+description: "Authentication & authorization patterns for seeker1"
+globs:
+alwaysApply: true
+priority: 50
+---
+
+# Authentication & Authorization
+
+**Strategy**: SUPABASE
+**Permission model**: RBAC
+
+## Critical Rules
+
+1. **NEVER** bypass authentication middleware or guards
+2. **NEVER** hardcode credentials, API keys, or tokens in source code
+3. **NEVER** expose internal user IDs or session tokens in API responses
+4. **ALWAYS** validate and sanitize authentication inputs (tokens, passwords, etc.)
+5. **ALWAYS** check authorization before performing data mutations
+
+
+

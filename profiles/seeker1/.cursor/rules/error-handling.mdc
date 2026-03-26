@@ -1,0 +1,21 @@
+---
+description: "Error handling and logging conventions for seeker1"
+globs:
+alwaysApply: true
+priority: 30
+---
+
+# Error Handling & Logging
+
+**Strategy**: exceptions
+
+## Rules
+
+1. Use custom error classes instead of generic `Error` or `Exception`
+2. Always include meaningful error messages with context
+3. Catch specific exceptions — never catch-all without re-throwing
+4. Log errors before re-throwing or returning error responses
+
+
+
+

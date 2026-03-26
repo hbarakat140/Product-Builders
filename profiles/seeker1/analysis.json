@@ -1,0 +1,687 @@
+{
+  "metadata": {
+    "name": "seeker1",
+    "description": "",
+    "repo_path": "C:\\Users\\hbbar\\Documents\\GitHub\\Truth Seekr",
+    "repo_url": "",
+    "git_platform": null,
+    "sub_project": null,
+    "analysis_timestamp": "2026-03-25T20:39:09.855128Z",
+    "analysis_version": "0.1.0",
+    "last_commit_sha": "766298ce16466bcbdc9a1efd5bb6edc62ff03314",
+    "product_family": null
+  },
+  "tech_stack": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "languages": {
+      "TypeScript": 95.6,
+      "SQL": 2.9,
+      "CSS": 1.5
+    },
+    "primary_language": "TypeScript",
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "^15",
+        "category": "web"
+      },
+      {
+        "name": "react",
+        "version": "^19",
+        "category": "web"
+      }
+    ],
+    "build_tools": [],
+    "package_managers": [
+      "npm"
+    ],
+    "runtime_versions": {}
+  },
+  "database": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "database_type": "postgresql",
+    "orm": null,
+    "orm_version": null,
+    "migration_tool": null,
+    "migration_directory": null,
+    "schema_naming_convention": null,
+    "relationship_patterns": [],
+    "has_seeds": false,
+    "seed_directory": null
+  },
+  "auth": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "auth_strategy": "supabase",
+    "auth_middleware": [],
+    "permission_model": "rbac",
+    "protected_route_patterns": [],
+    "token_handling": null,
+    "session_management": null,
+    "auth_directories": []
+  },
+  "dependencies": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "dependencies": [
+      {
+        "name": "@anthropic-ai/sdk",
+        "version": "^0.78.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "@base-ui/react",
+        "version": "^1.3.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "@supabase/ssr",
+        "version": "^0.9.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "@supabase/supabase-js",
+        "version": "^2.99.1",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "class-variance-authority",
+        "version": "^0.7.1",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "clsx",
+        "version": "^2.1.1",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "lucide-react",
+        "version": "^0.577.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "mammoth",
+        "version": "^1.12.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "next",
+        "version": "^15",
+        "is_dev": false,
+        "category": "web-framework"
+      },
+      {
+        "name": "next-themes",
+        "version": "^0.4.6",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "openai",
+        "version": "^6.27.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "pdf-parse",
+        "version": "^1.1.1",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "react",
+        "version": "^19",
+        "is_dev": false,
+        "category": "ui-framework"
+      },
+      {
+        "name": "react-dom",
+        "version": "^19",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "shadcn",
+        "version": "^4.0.5",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "sonner",
+        "version": "^2.0.7",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "tailwind-merge",
+        "version": "^3.5.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "tw-animate-css",
+        "version": "^1.4.0",
+        "is_dev": false,
+        "category": ""
+      },
+      {
+        "name": "@eslint/eslintrc",
+        "version": "^3",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@tailwindcss/postcss",
+        "version": "^4",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@testing-library/jest-dom",
+        "version": "^6.9.1",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@testing-library/react",
+        "version": "^16.3.2",
+        "is_dev": true,
+        "category": "testing"
+      },
+      {
+        "name": "@types/node",
+        "version": "^22",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@types/react",
+        "version": "^19",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@types/react-dom",
+        "version": "^19",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "@vitejs/plugin-react",
+        "version": "^6.0.0",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "eslint",
+        "version": "^9",
+        "is_dev": true,
+        "category": "linting"
+      },
+      {
+        "name": "eslint-config-next",
+        "version": "^15",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "jsdom",
+        "version": "^28.1.0",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "postcss",
+        "version": "^8",
+        "is_dev": true,
+        "category": ""
+      },
+      {
+        "name": "tailwindcss",
+        "version": "^4",
+        "is_dev": true,
+        "category": "styling"
+      },
+      {
+        "name": "typescript",
+        "version": "^5",
+        "is_dev": true,
+        "category": "language"
+      },
+      {
+        "name": "vitest",
+        "version": "^4.1.0",
+        "is_dev": true,
+        "category": "testing"
+      }
+    ],
+    "dependency_manifest_files": [
+      "package.json"
+    ],
+    "lock_file": "package-lock.json"
+  },
+  "error_handling": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "error_strategy": "exceptions",
+    "logging_framework": null,
+    "logging_config_file": null,
+    "monitoring_integration": null,
+    "error_response_format": null,
+    "custom_error_classes": []
+  },
+  "i18n": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "i18n_framework": null,
+    "translation_file_format": null,
+    "translation_directories": [],
+    "default_locale": null,
+    "supported_locales": [],
+    "string_externalization_pattern": null
+  },
+  "state_management": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "state_library": null,
+    "data_fetching_library": null,
+    "store_structure": null,
+    "state_patterns": [
+      "React Context / hooks"
+    ]
+  },
+  "env_config": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "config_approach": "dotenv",
+    "env_files": [
+      ".env.example"
+    ],
+    "has_docker": false,
+    "dockerfile_path": null,
+    "docker_compose_path": null,
+    "feature_flags_system": null,
+    "config_directories": []
+  },
+  "git_workflow": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "git_platform": null,
+    "branch_naming_strategy": null,
+    "commit_message_format": null,
+    "pr_template_path": null,
+    "merge_strategy": null,
+    "required_reviewers": null,
+    "ci_config_path": null,
+    "release_tagging": null
+  },
+  "structure": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "root_directories": [
+      "docs",
+      "src",
+      "supabase"
+    ],
+    "source_directories": [
+      "src"
+    ],
+    "key_directories": [
+      {
+        "path": "docs",
+        "purpose": "Documentation"
+      },
+      {
+        "path": "src",
+        "purpose": "Source code"
+      },
+      {
+        "path": "src/app",
+        "purpose": "Application code"
+      },
+      {
+        "path": "src/app/api",
+        "purpose": "API endpoints"
+      },
+      {
+        "path": "src/components",
+        "purpose": "UI components"
+      },
+      {
+        "path": "src/lib",
+        "purpose": "Library code"
+      },
+      {
+        "path": "src/lib/pipeline/__tests__",
+        "purpose": "Test files (Jest convention)"
+      },
+      {
+        "path": "src/lib/supabase/__tests__",
+        "purpose": "Test files (Jest convention)"
+      },
+      {
+        "path": "src/types",
+        "purpose": "TypeScript type definitions"
+      },
+      {
+        "path": "supabase/migrations",
+        "purpose": "Database migrations"
+      }
+    ],
+    "module_organization": "flat",
+    "is_monorepo": false,
+    "monorepo_tool": null,
+    "sub_projects": []
+  },
+  "conventions": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "linter": "eslint",
+    "linter_config_path": "eslint.config.mjs",
+    "formatter": null,
+    "formatter_config_path": null,
+    "editorconfig_path": null,
+    "import_ordering": null,
+    "naming_convention": null,
+    "file_naming_convention": null
+  },
+  "security": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "input_validation": null,
+    "cors_config": null,
+    "secrets_management": null,
+    "csp_headers": false,
+    "security_middleware": [],
+    "vulnerability_scanning": null
+  },
+  "testing": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "test_framework": "vitest",
+    "test_runner": "vitest",
+    "test_directories": [],
+    "test_file_pattern": null,
+    "mocking_library": null,
+    "coverage_tool": null,
+    "coverage_config_path": null,
+    "fixture_patterns": [],
+    "e2e_framework": null
+  },
+  "cicd": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "platform": null,
+    "config_path": null,
+    "build_steps": [],
+    "deployment_targets": [],
+    "required_checks": []
+  },
+  "design_ui": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "css_methodology": "tailwind",
+    "component_library": "shadcn",
+    "component_library_version": "^4.0.5",
+    "design_tokens_format": null,
+    "design_tokens_path": null,
+    "responsive_strategy": "tailwind-responsive",
+    "theme_provider": null,
+    "styling_directories": [],
+    "uses_shared_design_system": false,
+    "shared_design_system_name": null
+  },
+  "accessibility": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "wcag_level": null,
+    "a11y_testing_tools": [
+      "testing-library"
+    ],
+    "aria_usage_detected": true,
+    "semantic_html_score": "low",
+    "keyboard_navigation": false,
+    "color_contrast_config": null
+  },
+  "api": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "api_style": "rest",
+    "route_structure": "app-router (Next.js)",
+    "api_directories": [],
+    "openapi_spec_path": null,
+    "request_validation": null,
+    "response_format": null,
+    "pagination_pattern": null,
+    "versioning_strategy": null
+  },
+  "performance": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "caching_strategy": null,
+    "lazy_loading": false,
+    "code_splitting": false,
+    "bundle_size_config": "next.js (built-in)",
+    "image_optimization": "next/image",
+    "n_plus_one_prevention": null,
+    "performance_monitoring": null
+  },
+  "frontend_patterns": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "layout_patterns": [
+      "tailwind-flex/grid"
+    ],
+    "form_libraries": [],
+    "modal_pattern": "custom-modal",
+    "list_virtualization": null,
+    "error_boundary": false,
+    "loading_patterns": [
+      "skeleton",
+      "loading-state"
+    ],
+    "routing_library": "next-router",
+    "animation_library": null
+  },
+  "user_flows": {
+    "status": "success",
+    "error_message": null,
+    "raw_data": {},
+    "route_count": 21,
+    "route_files": [
+      "src\\app\\layout.tsx",
+      "src\\app\\page.tsx",
+      "src\\app\\batch\\[id]\\layout.tsx",
+      "src\\app\\batch\\[id]\\page.tsx",
+      "src\\app\\batch\\[id]\\chat\\page.tsx",
+      "src\\app\\batch\\[id]\\history\\page.tsx",
+      "src\\app\\batch\\[id]\\search\\page.tsx",
+      "src\\app\\batch\\[id]\\upload\\page.tsx",
+      "src\\app\\api\\batches\\route.ts",
+      "src\\app\\api\\chat\\route.ts",
+      "src\\app\\api\\conversations\\route.ts",
+      "src\\app\\api\\documents\\route.ts",
+      "src\\app\\api\\history\\route.ts",
+      "src\\app\\api\\process\\route.ts",
+      "src\\app\\api\\search\\route.ts",
+      "src\\app\\api\\upload\\route.ts",
+      "src\\app\\api\\documents\\[id]\\route.ts",
+      "src\\app\\api\\documents\\[id]\\download\\route.ts",
+      "src\\app\\api\\conversations\\[id]\\route.ts",
+      "src\\app\\api\\batches\\[id]\\route.ts",
+      "src\\app\\api\\batches\\__tests__\\route.test.ts"
+    ],
+    "navigation_type": "next-app-router",
+    "auth_protected_routes": false,
+    "has_404_page": false,
+    "has_error_page": false,
+    "page_directories": [
+      "src/app"
+    ]
+  },
+  "architecture_deep": {
+    "layering_pattern": null,
+    "dependency_direction": null,
+    "bounded_contexts": [],
+    "module_boundaries": {}
+  },
+  "domain_model_deep": {
+    "domain_vocabulary": [],
+    "entity_relationships": {},
+    "business_logic_locations": []
+  },
+  "implicit_conventions_deep": {
+    "naming_philosophy": null,
+    "abstraction_level": null,
+    "code_organization_habits": []
+  },
+  "scopes": {
+    "zones": [
+      {
+        "name": "frontend_ui",
+        "paths": [
+          "src/components/**",
+          "src\\components/**",
+          "src/components/**"
+        ]
+      },
+      {
+        "name": "api",
+        "paths": [
+          "src\\app\\api/**",
+          "src/app/api/**",
+          "src\\app\\api/**"
+        ]
+      },
+      {
+        "name": "backend_logic",
+        "paths": [
+          "src/lib/**",
+          "src\\lib/**",
+          "src/lib/**"
+        ]
+      },
+      {
+        "name": "database",
+        "paths": [
+          "supabase\\migrations/**"
+        ]
+      },
+      {
+        "name": "tests",
+        "paths": [
+          "src\\lib\\pipeline\\__tests__/**",
+          "src\\lib\\pipeline\\__tests__/**"
+        ]
+      },
+      {
+        "name": "configuration",
+        "paths": [
+          ".env*",
+          "config/**"
+        ]
+      }
+    ],
+    "contributor_scopes": [
+      {
+        "role": "engineer",
+        "allowed_zones": [
+          "frontend_ui",
+          "api",
+          "backend_logic",
+          "database",
+          "configuration",
+          "tests"
+        ],
+        "read_only_zones": [],
+        "forbidden_zones": []
+      },
+      {
+        "role": "technical_pm",
+        "allowed_zones": [
+          "frontend_ui",
+          "api"
+        ],
+        "read_only_zones": [
+          "backend_logic",
+          "tests"
+        ],
+        "forbidden_zones": [
+          "database",
+          "configuration"
+        ]
+      },
+      {
+        "role": "product_manager",
+        "allowed_zones": [
+          "frontend_ui"
+        ],
+        "read_only_zones": [
+          "api",
+          "backend_logic"
+        ],
+        "forbidden_zones": [
+          "database",
+          "configuration"
+        ]
+      },
+      {
+        "role": "designer",
+        "allowed_zones": [
+          "frontend_ui"
+        ],
+        "read_only_zones": [],
+        "forbidden_zones": [
+          "api",
+          "backend_logic",
+          "database",
+          "configuration"
+        ]
+      },
+      {
+        "role": "qa_tester",
+        "allowed_zones": [
+          "tests"
+        ],
+        "read_only_zones": [
+          "frontend_ui",
+          "api",
+          "backend_logic"
+        ],
+        "forbidden_zones": [
+          "database",
+          "configuration"
+        ]
+      }
+    ]
+  }
+}

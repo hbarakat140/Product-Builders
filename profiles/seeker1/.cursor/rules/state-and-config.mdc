@@ -1,0 +1,26 @@
+---
+description: "State management and configuration patterns for seeker1"
+globs:
+alwaysApply: false
+priority: 25
+---
+
+# State Management & Configuration
+
+
+## Configuration
+
+- **Approach**: dotenv
+
+### Environment Files
+
+- `.env.example`
+
+> Never commit `.env` files with real secrets. Use `.env.example` as a template.
+
+
+
+## Rules
+
+1. Use environment variables or config files for environment-specific values — never hardcode
+4. Keep configuration separate from business logic

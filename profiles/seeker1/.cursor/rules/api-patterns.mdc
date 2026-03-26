@@ -1,0 +1,24 @@
+---
+description: "API conventions and patterns for seeker1"
+globs:
+alwaysApply: false
+priority: 30
+---
+
+# API Patterns
+
+**Style**: REST
+
+## Rules
+
+1. Follow RESTful resource naming conventions (plural nouns, e.g. `/users`, `/orders`)
+2. Use appropriate HTTP methods: GET (read), POST (create), PUT/PATCH (update), DELETE (remove)
+3. Return appropriate HTTP status codes (200, 201, 400, 401, 403, 404, 500)
+4. Include pagination for list endpoints
+
+
+## Route Structure
+
+Pattern: `app-router (Next.js)`
+
+
