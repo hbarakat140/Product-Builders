@@ -77,7 +77,17 @@ class OnboardingGenerator(BaseGenerator):
         return self.write_file(output_dir / "docs" / filename, content)
 
     def _generate_bootstrap(self, profile: ProductProfile, output_dir: Path) -> Path:
-        content = self.render_template("bootstrap-meta-rule.mdc.j2", profile=profile)
+        from product_builders.deep_analysis.prompts import (
+            build_adaptive_questions,
+            get_output_yaml_example,
+        )
+
+        content = self.render_template(
+            "bootstrap-meta-rule.mdc.j2",
+            profile=profile,
+            adaptive_questions=build_adaptive_questions(profile),
+            yaml_example=get_output_yaml_example(profile),
+        )
         return self.write_file(
             output_dir / ".cursor" / "rules" / "bootstrap-meta-rule.mdc", content
         )

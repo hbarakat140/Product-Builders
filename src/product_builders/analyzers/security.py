@@ -27,7 +27,7 @@ class SecurityAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "security"
 
-    def analyze(self, repo_path: Path) -> SecurityResult:
+    def analyze(self, repo_path: Path, *, index=None) -> SecurityResult:
         input_validation = self._detect_validation(repo_path)
         cors = self._detect_cors(repo_path)
         secrets_mgmt = self._detect_secrets_management(repo_path)

@@ -33,7 +33,7 @@ class APIAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "api"
 
-    def analyze(self, repo_path: Path) -> APIResult:
+    def analyze(self, repo_path: Path, *, index=None) -> APIResult:
         api_style = self._detect_api_style(repo_path)
         route_structure = self._detect_route_structure(repo_path)
         api_dirs = self._detect_api_dirs(repo_path)
@@ -42,6 +42,30 @@ class APIAnalyzer(BaseAnalyzer):
         response_format = self._detect_response_format(repo_path)
         pagination = self._detect_pagination(repo_path)
         versioning = self._detect_versioning(repo_path)
+
+        # AST-enriched path: detect API style from route decorators and imports
+        if index is not None and api_style is None:
+            # Detect REST from route decorators
+            rest_decorators = [
+                "app.get", "app.post", "app.put", "app.delete", "app.patch",
+                "router.get", "router.post", "router.put", "router.delete",
+                "Get", "Post", "Put", "Delete",
+            ]
+            for dec in rest_decorators:
+                if index.get_decorator_usage(dec):
+                    api_style = "rest"
+                    break
+
+            # Detect GraphQL from imports
+            if api_style is None:
+                graphql_modules = [
+                    "graphql", "@apollo", "type-graphql", "nexus",
+                    "graphene", "strawberry",
+                ]
+                for mod in graphql_modules:
+                    if index.who_imports(mod):
+                        api_style = "graphql"
+                        break
 
         return APIResult(
             status=AnalysisStatus.SUCCESS,

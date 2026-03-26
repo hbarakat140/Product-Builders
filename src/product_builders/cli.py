@@ -132,7 +132,39 @@ def analyze(
         results_table.add_column("Status", style="bold")
         results_table.add_column("Details")
 
+        # Phase 1: Run TechStack analyzer first (needed for AST language detection)
+        index = None
+        tech_analyzer = registry.get_analyzer("tech_stack")
+        if tech_analyzer and "tech_stack" in HEURISTIC_PROFILE_FIELDS:
+            tech_result = tech_analyzer.safe_analyze(analysis_root)
+            setattr(profile, "tech_stack", tech_result)
+            status_style = {"success": "green", "partial": "yellow", "error": "red", "skipped": "dim"}.get(
+                tech_result.status.value, "white"
+            )
+            results_table.add_row(
+                tech_analyzer.name,
+                f"[{status_style}]{tech_result.status.value}[/{status_style}]",
+                tech_result.error_message or "",
+            )
+
+            # Phase 2: Build AST CodebaseIndex (only if tree-sitter installed)
+            try:
+                from product_builders.ast import TREE_SITTER_AVAILABLE, build_codebase_index
+
+                if TREE_SITTER_AVAILABLE:
+                    index = build_codebase_index(analysis_root, tech_result.languages)
+                    if index:
+                        console.print(
+                            f"  [dim]AST index: {index.file_count} files parsed"
+                            f" ({index.parse_errors} errors)[/dim]"
+                        )
+            except Exception as exc:
+                logging.getLogger(__name__).debug("AST indexing skipped: %s", exc)
+
+        # Phase 3: Run remaining analyzers with index
         for analyzer in analyzer_instances:
+            if analyzer.dimension == "tech_stack":
+                continue  # Already ran
             if analyzer.dimension not in HEURISTIC_PROFILE_FIELDS:
                 logging.getLogger(__name__).warning(
                     "Analyzer '%s' has unknown dimension '%s', skipping",
@@ -140,7 +172,7 @@ def analyze(
                 )
                 continue
 
-            result = analyzer.safe_analyze(analysis_root)
+            result = analyzer.safe_analyze(analysis_root, index=index)
             setattr(profile, analyzer.dimension, result)
 
             status_style = {
@@ -290,6 +322,109 @@ def generate(ctx: click.Context, name: str, role_alias: str | None, validate: bo
                 warnings=len(report.warnings),
             )
             raise click.ClickException("Structural validation failed.")
+
+
+# ---------------------------------------------------------------------------
+# ingest-deep
+# ---------------------------------------------------------------------------
+
+@main.command(name="ingest-deep")
+@click.option("--name", "-n", required=True, help="Product name.")
+@click.option(
+    "--repo", "-r", required=True,
+    type=click.Path(exists=True, file_okay=False, resolve_path=True),
+    help="Path to the product repo (for evidence validation).",
+)
+@click.option(
+    "--deep-file", default=None,
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="Path to deep-analysis.yaml (default: <repo>/deep-analysis.yaml).",
+)
+@click.option("--dry-run", is_flag=True, help="Validate only — do not merge into profile.")
+@click.pass_context
+def ingest_deep(
+    ctx: click.Context, name: str, repo: str, deep_file: str | None, dry_run: bool
+) -> None:
+    """Ingest Cursor-produced deep analysis into a product profile.
+
+    Reads deep-analysis.yaml, validates its structure and evidence citations,
+    then merges the deep fields into the existing analysis.json.  Run
+    ``generate`` afterwards to refresh rules with the enriched data.
+    """
+    import shutil
+
+    from product_builders.deep_analysis.ingest import (
+        ingest_deep_analysis,
+        load_deep_yaml,
+    )
+    from product_builders.deep_analysis.schema import validate_deep_yaml
+    from product_builders.metrics import record_event
+
+    config: Config = ctx.obj["config"]
+    repo_path = Path(repo)
+
+    try:
+        profile_path = config.get_analysis_path(name)
+    except ValueError as e:
+        raise click.BadParameter(str(e), param_hint="'--name'") from e
+
+    if not profile_path.exists():
+        raise click.ClickException(f"No profile found for '{name}'. Run 'analyze' first.")
+
+    # Locate deep-analysis.yaml
+    yaml_path = Path(deep_file) if deep_file else repo_path / "deep-analysis.yaml"
+    if not yaml_path.exists():
+        raise click.ClickException(
+            f"Deep analysis file not found: {yaml_path}\n"
+            "Run the bootstrap meta-rule in Cursor first to produce this file."
+        )
+
+    console.print(f"\n[bold blue]Ingesting deep analysis[/bold blue] for [green]{name}[/green]")
+    console.print(f"  Source: {yaml_path}")
+
+    # Load and validate
+    raw_data = load_deep_yaml(yaml_path)
+    try:
+        validated, warnings = validate_deep_yaml(raw_data, repo_path)
+    except ValueError as e:
+        raise click.ClickException(str(e)) from e
+
+    # Report validation results
+    console.print(f"  Sections found: {validated.section_count}/3")
+
+    if warnings:
+        console.print(f"\n[yellow]Warnings ({len(warnings)}):[/yellow]")
+        for w in warnings:
+            console.print(f"  [yellow]⚠[/yellow] {w}")
+    else:
+        console.print("  [green]All evidence citations valid.[/green]")
+
+    if dry_run:
+        console.print("\n[dim]Dry run — no changes written.[/dim]")
+        return
+
+    # Merge into profile
+    profile = ProductProfile.load(profile_path)
+    updated = ingest_deep_analysis(profile, validated)
+    updated.save(profile_path)
+    console.print(f"\n[green]Profile updated:[/green] {profile_path}")
+
+    # Archive deep-analysis.yaml into profile directory
+    archive_path = config.get_deep_analysis_path(name)
+    shutil.copy2(yaml_path, archive_path)
+    console.print(f"  Archived to: {archive_path}")
+
+    record_event(
+        config.get_product_dir(name),
+        "ingest_deep",
+        sections=validated.section_count,
+        warnings=len(warnings),
+    )
+
+    console.print(
+        f"\n[bold]Next step:[/bold] Run [cyan]product-builders generate --name {name}[/cyan] "
+        "to refresh rules with deep analysis data."
+    )
 
 
 # ---------------------------------------------------------------------------

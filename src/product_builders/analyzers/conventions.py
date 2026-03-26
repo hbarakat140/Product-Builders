@@ -62,12 +62,36 @@ class ConventionsAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "conventions"
 
-    def analyze(self, repo_path: Path) -> ConventionsResult:
+    def analyze(self, repo_path: Path, *, index=None) -> ConventionsResult:
         linter, linter_path = self._detect_linter(repo_path)
         formatter, formatter_path = self._detect_formatter(repo_path)
         editorconfig = self._detect_editorconfig(repo_path)
         naming = self._detect_naming_convention(repo_path)
         file_naming = self._detect_file_naming(repo_path)
+
+        # AST-enriched path: use actual code symbol names for naming convention
+        if index is not None and naming is None:
+            samples = index.get_naming_samples(kind="function")
+            if len(samples) >= 10:
+                snake_count = sum(
+                    1 for s in samples if "_" in s.name and s.name == s.name.lower()
+                )
+                camel_count = sum(
+                    1 for s in samples
+                    if s.name[0:1].islower() and any(c.isupper() for c in s.name)
+                )
+                pascal_count = sum(
+                    1 for s in samples
+                    if s.name[0:1].isupper() and "_" not in s.name
+                )
+
+                total = len(samples)
+                if snake_count / total > 0.4:
+                    naming = "snake_case"
+                elif camel_count / total > 0.4:
+                    naming = "camelCase"
+                elif pascal_count / total > 0.4:
+                    naming = "PascalCase"
 
         # Ruff in pyproject.toml
         if not linter:

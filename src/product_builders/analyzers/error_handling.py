@@ -51,7 +51,7 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "error_handling"
 
-    def analyze(self, repo_path: Path) -> ErrorHandlingResult:
+    def analyze(self, repo_path: Path, *, index=None) -> ErrorHandlingResult:
         dep_names = self._collect_dep_names(repo_path)
         logging_fw = self._detect_logging_framework(dep_names, repo_path)
         logging_config = self._detect_logging_config(repo_path)
@@ -59,6 +59,14 @@ class ErrorHandlingAnalyzer(BaseAnalyzer):
         error_strategy, error_format, custom_errors = self._detect_error_patterns_combined(
             repo_path
         )
+
+        # AST-enriched path: find custom error/exception classes from AST
+        if index is not None:
+            all_classes = index.get_definitions(kind="class")
+            for cls in all_classes:
+                if cls.name.endswith(("Error", "Exception")):
+                    if cls.name not in custom_errors:
+                        custom_errors.append(cls.name)
 
         return ErrorHandlingResult(
             status=AnalysisStatus.SUCCESS,

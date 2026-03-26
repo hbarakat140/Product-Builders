@@ -16,7 +16,10 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from pathlib import Path
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from product_builders.ast.index import CodebaseIndex
 
 from product_builders.models.analysis import AnalysisResult, AnalysisStatus
 
@@ -57,18 +60,18 @@ class BaseAnalyzer(ABC):
         """ProductProfile field name this analyzer populates (e.g. 'tech_stack')."""
 
     @abstractmethod
-    def analyze(self, repo_path: Path) -> AnalysisResult:
+    def analyze(self, repo_path: Path, *, index: CodebaseIndex | None = None) -> AnalysisResult:
         """Run heuristic analysis on the repository.
 
         Must return an AnalysisResult subclass (never raise).
         On error, return a result with status=ERROR and error_message set.
         """
 
-    def safe_analyze(self, repo_path: Path) -> AnalysisResult:
+    def safe_analyze(self, repo_path: Path, *, index: CodebaseIndex | None = None) -> AnalysisResult:
         """Run analyze() with error handling — never raises."""
         try:
             logger.info("Running %s on %s", self.name, repo_path)
-            result = self.analyze(repo_path)
+            result = self.analyze(repo_path, index=index)
             logger.info("%s completed: %s", self.name, result.status)
             return result
         except Exception as e:

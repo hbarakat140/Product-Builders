@@ -22,7 +22,7 @@ class EnvConfigAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "env_config"
 
-    def analyze(self, repo_path: Path) -> EnvConfigResult:
+    def analyze(self, repo_path: Path, *, index=None) -> EnvConfigResult:
         config_approach = self._detect_config_approach(repo_path)
         env_files = self._detect_env_files(repo_path)
         has_docker, dockerfile, compose = self._detect_docker(repo_path)

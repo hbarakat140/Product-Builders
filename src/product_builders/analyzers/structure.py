@@ -96,7 +96,7 @@ class StructureAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "structure"
 
-    def analyze(self, repo_path: Path) -> StructureResult:
+    def analyze(self, repo_path: Path, *, index=None) -> StructureResult:
         root_dirs = self._get_root_directories(repo_path)
         source_dirs = self._find_source_directories(repo_path)
         key_dirs = self._identify_key_directories(repo_path)

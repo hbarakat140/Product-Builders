@@ -22,7 +22,7 @@ class PerformanceAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "performance"
 
-    def analyze(self, repo_path: Path) -> PerformanceResult:
+    def analyze(self, repo_path: Path, *, index=None) -> PerformanceResult:
         caching = self._detect_caching(repo_path)
         lazy_loading = self._detect_lazy_loading(repo_path)
         code_splitting = self._detect_code_splitting(repo_path)

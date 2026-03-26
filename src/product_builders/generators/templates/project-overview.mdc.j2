@@ -43,6 +43,16 @@ priority: 40
 
 {% endif %}
 
+{% if profile.architecture_deep.bounded_contexts %}
+## Bounded Contexts
+
+{% for ctx in profile.architecture_deep.bounded_contexts %}
+- {{ ctx.name }}
+{% endfor %}
+
+> Keep domain concepts within their bounded context.
+{% endif %}
+
 {% if profile.database.orm %}
 ## Database
 

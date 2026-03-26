@@ -28,6 +28,12 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+ast = [
+    "tree-sitter>=0.22",
+    "tree-sitter-javascript>=0.21",
+    "tree-sitter-typescript>=0.21",
+    "tree-sitter-python>=0.21",
+]
 webapp = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",

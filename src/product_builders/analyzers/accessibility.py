@@ -34,7 +34,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "accessibility"
 
-    def analyze(self, repo_path: Path) -> AccessibilityResult:
+    def analyze(self, repo_path: Path, *, index=None) -> AccessibilityResult:
         wcag = self._detect_wcag_level(repo_path)
         tools = self._detect_a11y_tools(repo_path)
         aria = self._detect_aria_usage(repo_path)

@@ -154,6 +154,23 @@ def _phase_2_analyze(
         heuristic_only=heuristic_only,
         sub_project=None,
     )
+
+    if not heuristic_only:
+        from rich.panel import Panel
+
+        console.print(
+            Panel.fit(
+                "[bold]Deep Analysis Workflow[/bold]\n\n"
+                "1. Open the product repo in Cursor\n"
+                "2. Tell Cursor: [cyan]run deep analysis[/cyan]\n"
+                "3. Cursor follows the bootstrap rule (3 sequential steps)\n"
+                "4. Cursor writes findings to [cyan]deep-analysis.yaml[/cyan]\n"
+                f"5. Run: [cyan]product-builders ingest-deep --name {name} --repo {repo}[/cyan]\n"
+                f"6. Run: [cyan]product-builders generate --name {name}[/cyan] to refresh rules",
+                title="Next: Cursor Deep Analysis",
+            )
+        )
+
     return repo, name
 
 

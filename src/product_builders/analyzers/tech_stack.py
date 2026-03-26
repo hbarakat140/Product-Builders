@@ -137,7 +137,7 @@ class TechStackAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "tech_stack"
 
-    def analyze(self, repo_path: Path) -> TechStackResult:
+    def analyze(self, repo_path: Path, *, index=None) -> TechStackResult:
         languages = self._detect_languages(repo_path)
         primary = max(languages, key=languages.get) if languages else None
         frameworks = self._detect_frameworks(repo_path)

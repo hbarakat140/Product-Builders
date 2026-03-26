@@ -66,3 +66,13 @@ Pattern: **{{ profile.api.pagination_pattern }}**
 
 All list endpoints must support pagination.
 {% endif %}
+
+{% if profile.domain_model_deep.business_logic_locations %}
+## Business Logic Locations
+
+{% for loc in profile.domain_model_deep.business_logic_locations %}
+- `{{ loc.path }}` — {{ loc.description }}
+{% endfor %}
+
+> Place new business logic in the appropriate location following the existing patterns.
+{% endif %}

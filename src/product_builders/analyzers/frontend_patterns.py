@@ -63,7 +63,7 @@ class FrontendPatternsAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "frontend_patterns"
 
-    def analyze(self, repo_path: Path) -> FrontendPatternsResult:
+    def analyze(self, repo_path: Path, *, index=None) -> FrontendPatternsResult:
         deps = self.collect_dependency_names(repo_path, include_requirements_txt=False)
 
         layout = self._detect_layout_patterns(repo_path, deps)
@@ -74,6 +74,27 @@ class FrontendPatternsAnalyzer(BaseAnalyzer):
         loading = self._detect_loading_patterns(repo_path)
         routing = self._detect_routing(deps)
         animation = self._detect_animation(deps)
+
+        # AST-enriched path: detect patterns from actual component usage and imports
+        if index is not None:
+            # Detect error boundaries from AST
+            if not error_boundary:
+                components = index.get_components()
+                component_names = {c.name for c in components}
+                if "ErrorBoundary" in component_names:
+                    error_boundary = True
+
+            # Detect form libraries from actual imports
+            form_libs = {
+                "react-hook-form": "react-hook-form",
+                "formik": "formik",
+                "@mantine/form": "mantine-form",
+                "react-final-form": "react-final-form",
+            }
+            for mod, lib_name in form_libs.items():
+                if index.who_imports(mod):
+                    if lib_name not in forms:
+                        forms.append(lib_name)
 
         return FrontendPatternsResult(
             status=AnalysisStatus.SUCCESS,

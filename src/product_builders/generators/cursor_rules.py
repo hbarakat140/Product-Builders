@@ -46,7 +46,11 @@ RULE_TEMPLATES: list[tuple[str, str]] = [
 def _should_generate(template_name: str, profile: ProductProfile) -> bool:
     """Skip templates when the relevant analysis dimension has no meaningful data."""
     checks: dict[str, bool] = {
-        "database.mdc.j2": profile.database.orm is not None or profile.database.database_type is not None,
+        "database.mdc.j2": (
+            profile.database.orm is not None
+            or profile.database.database_type is not None
+            or bool(profile.domain_model_deep.entity_relationships)
+        ),
         "auth-patterns.mdc.j2": profile.auth.auth_strategy is not None or bool(profile.auth.auth_directories),
         "architecture.mdc.j2": (
             profile.architecture_deep.layering_pattern is not None
@@ -57,16 +61,25 @@ def _should_generate(template_name: str, profile: ProductProfile) -> bool:
             profile.conventions.linter is not None
             or profile.conventions.formatter is not None
             or profile.conventions.naming_convention is not None
+            or profile.implicit_conventions_deep.naming_philosophy is not None
         ),
         "testing.mdc.j2": profile.testing.test_framework is not None,
         "design-system.mdc.j2": profile.design_ui.component_library is not None or profile.design_ui.css_methodology is not None,
         "accessibility.mdc.j2": profile.accessibility.wcag_level is not None or profile.accessibility.aria_usage_detected,
-        "api-patterns.mdc.j2": profile.api.api_style is not None,
+        "api-patterns.mdc.j2": (
+            profile.api.api_style is not None
+            or bool(profile.domain_model_deep.business_logic_locations)
+        ),
         "i18n.mdc.j2": profile.i18n.i18n_framework is not None,
         "state-and-config.mdc.j2": (
             profile.state_management.state_library is not None
             or profile.env_config.config_approach is not None
             or profile.env_config.has_docker
+        ),
+        "error-handling.mdc.j2": (
+            profile.error_handling.error_strategy is not None
+            or profile.error_handling.logging_framework is not None
+            or profile.implicit_conventions_deep.error_handling_philosophy is not None
         ),
         "performance.mdc.j2": (
             profile.performance.caching_strategy is not None

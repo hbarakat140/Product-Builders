@@ -53,7 +53,7 @@ class GitWorkflowAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "git_workflow"
 
-    def analyze(self, repo_path: Path) -> GitWorkflowResult:
+    def analyze(self, repo_path: Path, *, index=None) -> GitWorkflowResult:
         platform = self._detect_platform(repo_path)
         ci_config = self._detect_ci_config(repo_path)
         pr_template = self._detect_pr_template(repo_path)

@@ -72,3 +72,9 @@ Format: **{{ profile.error_handling.error_response_format }}**
 
 All API error responses must follow the same structure. Check existing error handlers for the exact format.
 {% endif %}
+
+{% if profile.implicit_conventions_deep.error_handling_philosophy %}
+## Error Handling Philosophy
+
+{{ profile.implicit_conventions_deep.error_handling_philosophy }}
+{% endif %}

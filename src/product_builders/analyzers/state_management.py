@@ -51,11 +51,33 @@ class StateManagementAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "state_management"
 
-    def analyze(self, repo_path: Path) -> StateManagementResult:
+    def analyze(self, repo_path: Path, *, index=None) -> StateManagementResult:
         state_lib = self._detect_state_lib(repo_path)
         data_fetching = self._detect_data_fetching(repo_path)
         store_structure = self._detect_store_structure(repo_path)
         patterns = self._detect_patterns(repo_path)
+
+        # AST-enriched path: verify state library usage from actual imports
+        if index is not None:
+            state_libs = {
+                "zustand": "zustand", "redux": "redux",
+                "@reduxjs/toolkit": "redux", "mobx": "mobx",
+                "recoil": "recoil", "jotai": "jotai", "valtio": "valtio",
+                "pinia": "pinia", "vuex": "vuex",
+            }
+            for mod, lib_name in state_libs.items():
+                if index.who_imports(mod):
+                    state_lib = state_lib or lib_name
+                    break
+
+            data_fetch_libs = {
+                "@tanstack/react-query": "react-query", "swr": "swr",
+                "@apollo/client": "apollo", "urql": "urql",
+            }
+            for mod, lib_name in data_fetch_libs.items():
+                if index.who_imports(mod):
+                    data_fetching = data_fetching or lib_name
+                    break
 
         return StateManagementResult(
             status=AnalysisStatus.SUCCESS,

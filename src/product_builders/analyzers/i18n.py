@@ -39,7 +39,7 @@ class I18nAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "i18n"
 
-    def analyze(self, repo_path: Path) -> I18nResult:
+    def analyze(self, repo_path: Path, *, index=None) -> I18nResult:
         framework = self._detect_framework(repo_path)
         file_format, directories = self._detect_translation_files(repo_path)
         default_locale, locales = self._detect_locales(repo_path, directories)

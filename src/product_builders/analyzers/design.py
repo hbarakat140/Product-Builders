@@ -58,7 +58,7 @@ class DesignUIAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "design_ui"
 
-    def analyze(self, repo_path: Path) -> DesignUIResult:
+    def analyze(self, repo_path: Path, *, index=None) -> DesignUIResult:
         component_lib, component_version = self._detect_component_library(repo_path)
         css_method = self._detect_css_methodology(repo_path)
         tokens_format, tokens_path = self._detect_design_tokens(repo_path)

@@ -80,6 +80,9 @@ class Config:
     def get_overrides_path(self, product_name: str) -> Path:
         return self.get_product_dir(product_name) / "overrides.yaml"
 
+    def get_deep_analysis_path(self, product_name: str) -> Path:
+        return self.get_product_dir(product_name) / "deep-analysis.yaml"
+
     def get_cursor_rules_dir(self, product_name: str) -> Path:
         return self.get_product_dir(product_name) / ".cursor" / "rules"
 

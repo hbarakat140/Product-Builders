@@ -10,7 +10,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AnalysisStatus(str, Enum):
@@ -315,26 +315,83 @@ class UserFlowsResult(AnalysisResult):
 # ---------------------------------------------------------------------------
 
 
+class BoundedContextEntry(BaseModel):
+    """A bounded context with evidence of where it exists."""
+
+    name: str
+    evidence: str | None = None
+
+
+class ModuleBoundaryEntry(BaseModel):
+    """Module dependency info with evidence."""
+
+    depends_on: list[str] = Field(default_factory=list)
+    evidence: str | None = None
+
+
+class DomainVocabularyEntry(BaseModel):
+    """A domain term with evidence of usage."""
+
+    term: str
+    evidence: str | None = None
+
+
+class EntityRelationshipEntry(BaseModel):
+    """An entity relationship with evidence."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    from_entity: str = Field(alias="from")
+    to_entity: str = Field(alias="to")
+    type: str = ""
+    evidence: str | None = None
+
+
+class BusinessLogicLocationEntry(BaseModel):
+    """A location where business logic lives."""
+
+    path: str
+    description: str = ""
+    evidence: str | None = None
+
+
+class CodeOrganizationHabitEntry(BaseModel):
+    """A code organization pattern with evidence."""
+
+    pattern: str
+    evidence: str | None = None
+
+
 class ArchitectureDeepResult(BaseModel):
     """Deep analysis: architecture & module boundaries (populated by Cursor)."""
 
     layering_pattern: str | None = None
+    layering_evidence: str | None = None
     dependency_direction: str | None = None
-    bounded_contexts: list[str] = Field(default_factory=list)
-    module_boundaries: dict[str, list[str]] = Field(default_factory=dict)
+    dependency_evidence: str | None = None
+    bounded_contexts: list[BoundedContextEntry] = Field(default_factory=list)
+    module_boundaries: dict[str, ModuleBoundaryEntry] = Field(default_factory=dict)
 
 
 class DomainModelDeepResult(BaseModel):
     """Deep analysis: domain model & business logic (populated by Cursor)."""
 
-    domain_vocabulary: list[str] = Field(default_factory=list)
-    entity_relationships: dict[str, list[str]] = Field(default_factory=dict)
-    business_logic_locations: list[str] = Field(default_factory=list)
+    domain_vocabulary: list[DomainVocabularyEntry] = Field(default_factory=list)
+    entity_relationships: list[EntityRelationshipEntry] = Field(default_factory=list)
+    business_logic_locations: list[BusinessLogicLocationEntry] = Field(
+        default_factory=list
+    )
 
 
 class ImplicitConventionsDeepResult(BaseModel):
     """Deep analysis: implicit conventions (populated by Cursor)."""
 
     naming_philosophy: str | None = None
+    naming_evidence: str | None = None
     abstraction_level: str | None = None
-    code_organization_habits: list[str] = Field(default_factory=list)
+    abstraction_evidence: str | None = None
+    code_organization_habits: list[CodeOrganizationHabitEntry] = Field(
+        default_factory=list
+    )
+    error_handling_philosophy: str | None = None
+    error_evidence: str | None = None

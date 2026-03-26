@@ -35,7 +35,7 @@ class CICDAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "cicd"
 
-    def analyze(self, repo_path: Path) -> CICDResult:
+    def analyze(self, repo_path: Path, *, index=None) -> CICDResult:
         platform, config_path = self._detect_platform(repo_path)
         build_steps = self._detect_build_steps(repo_path, platform, config_path)
         deployment_targets = self._detect_deployment_targets(repo_path)

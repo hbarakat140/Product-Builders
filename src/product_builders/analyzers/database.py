@@ -127,7 +127,7 @@ class DatabaseAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "database"
 
-    def analyze(self, repo_path: Path) -> DatabaseResult:
+    def analyze(self, repo_path: Path, *, index=None) -> DatabaseResult:
         dep_names = self._collect_dep_names(repo_path)
         orm, orm_version, migration_tool, migration_dir = self._detect_orm(repo_path, dep_names)
         db_type = self._detect_db_type(dep_names)

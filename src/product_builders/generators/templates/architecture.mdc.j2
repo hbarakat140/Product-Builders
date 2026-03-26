@@ -25,7 +25,7 @@ priority: 40
 
 {% if profile.architecture_deep.module_boundaries %}
 {% for module, deps in profile.architecture_deep.module_boundaries.items() %}
-- **{{ module }}** → {{ deps | join(', ') }}
+- **{{ module }}** → {{ deps.depends_on | join(', ') }}
 {% endfor %}
 
 > Respect these boundaries. Do not introduce circular dependencies.
@@ -42,7 +42,7 @@ Key modules:
 ## Bounded Contexts
 
 {% for ctx in profile.architecture_deep.bounded_contexts %}
-- {{ ctx }}
+- {{ ctx.name }}
 {% endfor %}
 
 > Keep domain concepts within their bounded context. Cross-context communication should use defined interfaces.

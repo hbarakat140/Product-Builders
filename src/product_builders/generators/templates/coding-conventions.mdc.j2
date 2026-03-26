@@ -81,3 +81,23 @@ priority: 30
 {% elif profile.conventions.naming_convention == 'camelCase' %}
 4. Use `camelCase` for variables and functions, `PascalCase` for classes and components
 {% endif %}
+
+{% if profile.implicit_conventions_deep.naming_philosophy %}
+## Naming Philosophy
+
+{{ profile.implicit_conventions_deep.naming_philosophy }}
+{% endif %}
+
+{% if profile.implicit_conventions_deep.abstraction_level %}
+## Abstraction Level
+
+{{ profile.implicit_conventions_deep.abstraction_level }}
+{% endif %}
+
+{% if profile.implicit_conventions_deep.code_organization_habits %}
+## Code Organization Patterns
+
+{% for habit in profile.implicit_conventions_deep.code_organization_habits %}
+- {{ habit.pattern }}
+{% endfor %}
+{% endif %}

@@ -72,7 +72,7 @@ class TestingAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "testing"
 
-    def analyze(self, repo_path: Path) -> TestingResult:
+    def analyze(self, repo_path: Path, *, index=None) -> TestingResult:
         framework, runner = self._detect_framework(repo_path)
         test_dirs = self._detect_test_dirs(repo_path)
         file_pattern = self._detect_file_pattern(repo_path)

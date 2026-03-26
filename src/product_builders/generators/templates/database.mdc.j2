@@ -53,3 +53,13 @@ priority: 50
 - Update seed data when adding new required fields
 - Seeds must be idempotent — safe to run multiple times
 {% endif %}
+
+{% if profile.domain_model_deep.entity_relationships %}
+## Entity Relationships
+
+{% for rel in profile.domain_model_deep.entity_relationships %}
+- **{{ rel.from_entity }}** → **{{ rel.to_entity }}** ({{ rel.type }})
+{% endfor %}
+
+> Respect these relationships when creating or modifying queries.
+{% endif %}

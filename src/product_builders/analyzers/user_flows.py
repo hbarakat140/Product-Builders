@@ -22,7 +22,7 @@ class UserFlowsAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "user_flows"
 
-    def analyze(self, repo_path: Path) -> UserFlowsResult:
+    def analyze(self, repo_path: Path, *, index=None) -> UserFlowsResult:
         page_dirs = self._detect_page_dirs(repo_path)
         route_files, route_count = self._detect_routes(repo_path, page_dirs)
         nav_type = self._detect_navigation_type(repo_path)

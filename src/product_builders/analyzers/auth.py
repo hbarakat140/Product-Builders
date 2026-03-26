@@ -73,7 +73,7 @@ class AuthAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "auth"
 
-    def analyze(self, repo_path: Path) -> AuthResult:
+    def analyze(self, repo_path: Path, *, index=None) -> AuthResult:
         dep_names = self._collect_dep_names(repo_path)
         strategy = self._detect_strategy(dep_names)
         middleware = self._detect_middleware(repo_path, dep_names)
@@ -82,7 +82,7 @@ class AuthAnalyzer(BaseAnalyzer):
         )
         auth_dirs = self._detect_auth_directories(repo_path)
 
-        return AuthResult(
+        result = AuthResult(
             status=AnalysisStatus.SUCCESS,
             auth_strategy=strategy,
             auth_middleware=middleware,
@@ -90,6 +90,32 @@ class AuthAnalyzer(BaseAnalyzer):
             protected_route_patterns=protected_patterns,
             auth_directories=auth_dirs,
         )
+
+        # AST-enriched path: precise decorator-based auth detection
+        if index is not None:
+            auth_decorators = [
+                "login_required", "UseGuards", "Authorized", "requires_auth",
+                "permission_required", "protect", "authenticated",
+            ]
+            for dec in auth_decorators:
+                usages = index.get_decorator_usage(dec)
+                for file_path, defn in usages:
+                    pattern = f"{defn.name} (via @{dec})"
+                    if pattern not in result.protected_route_patterns:
+                        result.protected_route_patterns.append(pattern)
+
+            # Detect auth middleware from imports
+            auth_modules = [
+                "passport", "next-auth", "@auth", "firebase/auth", "clerk",
+                "supabase", "auth0", "django.contrib.auth", "flask_login",
+            ]
+            for mod in auth_modules:
+                importers = index.who_imports(mod)
+                for imp in importers[:5]:
+                    if imp not in result.auth_middleware:
+                        result.auth_middleware.append(imp)
+
+        return result
 
     def _detect_strategy(self, dep_names: set[str]) -> str | None:
         for strategy, indicators in AUTH_STRATEGY_INDICATORS.items():

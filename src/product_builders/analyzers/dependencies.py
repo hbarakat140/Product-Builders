@@ -54,7 +54,7 @@ class DependencyAnalyzer(BaseAnalyzer):
     def dimension(self) -> str:
         return "dependencies"
 
-    def analyze(self, repo_path: Path) -> DependenciesResult:
+    def analyze(self, repo_path: Path, *, index=None) -> DependenciesResult:
         deps: list[DependencyInfo] = []
         manifest_files: list[str] = []
         lock_file: str | None = None
